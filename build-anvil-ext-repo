@@ -107,8 +107,10 @@ function cleanup() {
 		rm -rf ${localsrpms}
 	fi
 	if [ "$wipemock" = "1" ]; then
-		mock --scrub=all -r $mockconfig
-		rm -rf $mockconfig
+		if [ -f $mockconfig ]; then
+			mock --scrub=all -r $mockconfig
+			rm -rf $mockconfig
+		fi
 	fi
 	if [ -n "$1" ]; then
 		exit $1
