@@ -1,2 +1,3 @@
 /centos-stream/*
 *.rpm
+*.swp
