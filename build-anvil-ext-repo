@@ -240,6 +240,8 @@ init_mock
 
 # get package list (common to multiple functions)
 
+# sourcing the package-list should return a 'packagelist' variable
+# containing the list of source packages to build
 . ./configs/${distro}-package-list
 
 prep_srpms
