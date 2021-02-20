@@ -24,6 +24,7 @@ function list_distros() {
 	cd configs
 	distros=$(ls -1 | sed -e 's#-mock.*##' -e 's#-package.*##g' | sort -u)
 	for i in $distros; do
+		# print distros that have all required config files
 		if [ -f ${i}-mock.cfg.in ] && [ -f ${i}-package-list ]; then
 			echo $i
 		fi
