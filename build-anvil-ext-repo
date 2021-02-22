@@ -279,9 +279,28 @@ function publish_repo() {
 	cd $publish
 	cat > ${distro}-anvil-external-deps.repo << EOF
 [${distro}-anvil-external-deps]
-baseurl=http://anvil-ci-repo.kronosnet.org/${distro}/latest
+name=$distro Anvil external depedencies repo
+baseurl=http://anvil-ci-repo.kronosnet.org/${distro}/latest/rpms
 repo_gpgcheck=0
 enabled=1
+gpgcheck=0
+metadata_expire=1h
+skip_if_unavailable=True
+
+[${distro}-anvil-external-deps-debuginfo]
+name=$distro Anvil external depedencies repo - Debug
+baseurl=http://anvil-ci-repo.kronosnet.org/${distro}/latest/debuginfo
+repo_gpgcheck=0
+enabled=0
+gpgcheck=0
+metadata_expire=1h
+skip_if_unavailable=True
+
+[${distro}-anvil-external-deps-sources]
+name=$distro Anvil external depedencies repo - Sources
+baseurl=http://anvil-ci-repo.kronosnet.org/${distro}/latest/srpms
+repo_gpgcheck=0
+enabled=0
 gpgcheck=0
 metadata_expire=1h
 skip_if_unavailable=True
