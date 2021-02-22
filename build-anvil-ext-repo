@@ -305,6 +305,10 @@ gpgcheck=0
 metadata_expire=1h
 skip_if_unavailable=True
 EOF
+
+	if selinuxenabled; then
+		restorecon -R $publish/
+	fi
 }
 
 # main starts here
