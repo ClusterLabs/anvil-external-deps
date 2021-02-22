@@ -15,8 +15,10 @@ function print_usage() {
 	echo " -l                       list currently supported distro"
 	echo " -w                       wipe all mock local caches"
 	echo " -r                       wipe srpms and temporary repositories before and after build"
+	echo " -p path/to/publish_area  publish the newly built repo to path and make it latest"
 	echo " -s                       skip rebuilding srpms (debug only)"
 	echo " -c                       skip refreshing chroot (debug only)"
+	echo " -b                       skip build (debug only)"
 	echo ""
 }
 
@@ -40,9 +42,14 @@ wipemock=0
 wiperpm=0
 skipsrpms=0
 skipchroot=0
+skipbuild=0
+publish=""
 
-while getopts ":hd:lwrsc" optflags; do
+while getopts ":hd:lwrscbp:" optflags; do
 	case "$optflags" in
+		b)
+			skipbuild=1
+			;;
 		c)
 			skipchroot=1
 			;;
@@ -52,6 +59,9 @@ while getopts ":hd:lwrsc" optflags; do
 		l)
 			list_distros
 			exit 0
+			;;
+		p)
+			publish="$OPTARG"
 			;;
 		r)
 			wiperpm=1
@@ -178,6 +188,10 @@ function prep_srpms() {
 # after $number_of_package + 5 attemts
 
 function build_rpms() {
+	if [ "$skipbuild" = "1" ]; then
+		return
+	fi
+
 	# add extra attempts in case we have network issues
 	count=5
 	for i in $packagelist; do
@@ -219,6 +233,61 @@ function build_final_repo() {
 	done
 }
 
+function publish_repo() {
+	if [ -z "$publish" ]; then
+		return
+	fi
+
+	installrepo=1
+	buildid=$(date +%Y%m%d%H%M%S)
+
+	if [ -d "$publish/$distro/latest" ]; then
+		echo "Comparing current build $buildid with latest repos $(cat $publish/$distro/latest/.buildid)"
+		latestsrpms="$(ls -1 $publish/$distro/latest/srpms/*.rpm | sed -e 's#.*srpms/##g' | sort -u)"
+		currentsrpms="$(ls -1 $finalrepo/srpms/*.rpm | sed -e 's#.*srpms/##g' | sort -u)"
+		if [ "$currentsrpms" = "$latestsrpms" ]; then
+			echo "Archives contains same rpms, not installing new one"
+			installrepo=0
+		else
+			echo "New archive contains different rpms, installing"
+		fi
+	fi
+
+	if [ "$installrepo" = "1" ]; then
+		mkdir -p $publish/$distro
+		mv $finalrepo $publish/$distro/$buildid
+		echo $buildid > $publish/$distro/$buildid/.buildid
+		cd $publish/$distro
+		rm -f latest
+		ln -sf $buildid latest
+	fi
+
+	echo "Cleaning older archives"
+	cd $publish/$distro
+	builds="$(ls -1 | grep -v latest | sort -n)"
+	numbuilds="$(echo "$builds" | wc -l)"
+	if [ "$numbuilds" -gt 5 ]; then
+		purgenum=$((numbuilds - 5))
+		candidates="$(echo "$builds" | head -n $purgenum)"
+		for x in $candidates; do
+			echo "Removing old build: $x"
+			rm -rf $x
+		done
+	fi
+
+	echo "Generating repo files"
+	cd $publish
+	cat > ${distro}-anvil-external-deps.repo << EOF
+[${distro}-anvil-external-deps]
+baseurl=http://anvil-ci-repo.kronosnet.org/${distro}/latest
+repo_gpgcheck=0
+enabled=1
+gpgcheck=0
+metadata_expire=1h
+skip_if_unavailable=True
+EOF
+}
+
 # main starts here
 
 # install traps to clean up in case of errors
@@ -248,5 +317,6 @@ prep_srpms
 build_rpms
 
 build_final_repo
+publish_repo
 
 cleanup 0
