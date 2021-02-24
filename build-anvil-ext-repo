@@ -37,7 +37,7 @@ function list_distros() {
 tools="fedpkg mock wget rpmbuild createrepo"
 
 # set defaults
-distro=centos-stream
+distro=centos-8-stream
 wipemock=0
 wiperpm=0
 skipsrpms=0
