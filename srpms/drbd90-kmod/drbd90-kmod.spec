@@ -6,7 +6,7 @@
 %{!?kversion: %define kversion %(rpm -q kernel-devel | /usr/lib/rpm/redhat/rpmsort -r | head -n 1 | sed -e 's#kernel-devel-##g')}
 
 Name:    %{kmod_name}-kmod
-Version: 9.0.27
+Version: 9.0.28
 Release: 1%{?dist}
 Group:   System Environment/Kernel
 License: GPLv2
