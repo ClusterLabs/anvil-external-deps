@@ -200,7 +200,7 @@ function build_rpms() {
 
 	current=0
 	while [ $current -le $count ]; do
-		if mock -r $mockconfig --localrepo=$localmockrepo --continue --chain $localsrpms/*.src.rpm; then
+		if mock --enable-network -r $mockconfig --localrepo=$localmockrepo --continue --chain $localsrpms/*.src.rpm; then
 			echo "Built complited in $current loops"
 			return
 		fi
