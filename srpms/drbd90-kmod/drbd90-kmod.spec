@@ -70,6 +70,9 @@ done
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Fri Feb 26 2021 Madison Kelly <mkelly@alteeve.ca> - 9.0.28-1.el8
+- Updated source to 9.0.28.
+
 * Thu Dec 24 2020 Madison Kelly <mkelly@alteeve.ca> - 9.0.27-1.el8
 - Updated source to 9.0.27.
 
