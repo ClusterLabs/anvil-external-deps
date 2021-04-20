@@ -133,6 +133,6 @@ enabled=0
 gpgkey=file:///usr/share/distribution-gpg-keys/centos/RPM-GPG-KEY-CentOS-Official
 """
 
-config_opts['root'] = 'anvil'
+config_opts['root'] = 'anvil-centos-8-stream'
 config_opts['target_arch'] = 'x86_64'
 config_opts['legal_host_arches'] = ('x86_64',)

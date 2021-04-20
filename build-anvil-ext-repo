@@ -11,7 +11,7 @@ function print_usage() {
 	echo ""
 	echo "Options:"
 	echo " -h help"
-	echo " -d distribution          centos-8|centos-8-stream|rhel-8 (default: centos-8-stream)"
+	echo " -d distribution          centos-8-stream|rhel-8 (default: centos-8-stream)"
 	echo " -l                       list currently supported distro"
 	echo " -w                       wipe all mock local caches"
 	echo " -r                       wipe srpms and temporary repositories before and after build"
