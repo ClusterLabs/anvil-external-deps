@@ -6,7 +6,7 @@
 %{!?kversion: %define kversion %(rpm -q kernel-devel | /usr/lib/rpm/redhat/rpmsort -r | head -n 1 | sed -e 's#kernel-devel-##g')}
 
 Name:    %{kmod_name}-kmod
-Version: 9.1.1
+Version: 9.1.2
 Release: 1%{?dist}
 Group:   System Environment/Kernel
 License: GPLv2
@@ -70,6 +70,9 @@ done
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Fri May 07 2021 Madison Kelly <mkelly@alteeve.ca> - 9.1.2-1.el8
+- Updated source to 9.1.2.
+
 * Sat Mar 27 2021 Madison Kelly <mkelly@alteeve.ca> - 9.1.1-1.el8
 - Updated source to 9.1.1.
 
