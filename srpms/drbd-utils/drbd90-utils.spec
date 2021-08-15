@@ -1,13 +1,13 @@
 %define real_name drbd-utils
 
 Name:    drbd90-utils
-Version: 9.17.0
-Release: 2%{?dist}
+Version: 9.18.2
+Release: 1%{?dist}
 License: GPLv2+
 Summary: Management utilities for DRBD
 URL:     http://www.drbd.org/
 
-Source0: https://www.linbit.com/downloads/drbd/utils/drbd-utils-%{version}.tar.gz
+Source0: https://pkg.linbit.com//downloads/drbd/utils/drbd-utils-%{version}.tar.gz
 Patch1:  elrepo-selinux-bug695.patch
 
 BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -146,6 +146,9 @@ fi
 %{_prefix}/lib/ocf/resource.d/linbit/drbd.shellfuncs.sh
 
 %changelog
+* Sun Aug 15 2021 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.18.2-1
+- Updated to 9.18.2
+
 * Mon Jun 28 2021 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.17.0-2
 - Switch to akmods
 
