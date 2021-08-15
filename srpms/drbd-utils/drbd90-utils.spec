@@ -2,7 +2,7 @@
 
 Name:    drbd90-utils
 Version: 9.18.2
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv2+
 Summary: Management utilities for DRBD
 URL:     http://www.drbd.org/
@@ -70,6 +70,7 @@ scripts for heartbeat, pacemaker, rgmanager and xen.
     --with-udev \
     --with-pacemaker \
     --with-drbdmon \
+    --with-prebuiltman \
     --with-initscripttype=systemd
 %{__make} %{?_smp_mflags}
 
@@ -98,8 +99,7 @@ fi
 
 %files
 %doc ChangeLog COPYING README.md scripts/drbd.conf.example
-%doc %{_mandir}/man7/ocf_linbit_drbd.7*
-%doc %{_mandir}/man7/ocf_linbit_drbd-attr.7*
+%doc %{_mandir}/man7/*.7*
 %doc %{_mandir}/man5/drbd.conf.5*
 %doc %{_mandir}/man5/drbd.conf-*
 %doc %{_mandir}/man8/drbd*
@@ -112,10 +112,10 @@ fi
 %config(noreplace) %{_sysconfdir}/multipath/conf.d/drbd.conf
 %dir %{_sysconfdir}/drbd.d/
 %config(noreplace) %{_sysconfdir}/drbd.d/global_common.conf
-%config %{_unitdir}/drbd.service
+%config %{_unitdir}/*
 %dir %{_localstatedir}/lib/drbd/
-%dir /lib/drbd/
-/lib/drbd/drbd
+%dir /lib/drbd/scripts
+/lib/drbd/scripts/*
 %attr(755, root, root) %{_sbindir}/drbdadm
 %attr(755, root, root) %{_sbindir}/drbdmeta
 %attr(755, root, root) %{_sbindir}/drbdsetup
@@ -146,6 +146,9 @@ fi
 %{_prefix}/lib/ocf/resource.d/linbit/drbd.shellfuncs.sh
 
 %changelog
+* Sun Aug 15 2021 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.18.2-2
+- Fix up packaging after 9.18.2 update
+
 * Sun Aug 15 2021 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.18.2-1
 - Updated to 9.18.2
 
