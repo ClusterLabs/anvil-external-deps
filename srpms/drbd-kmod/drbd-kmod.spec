@@ -8,11 +8,11 @@
 
 Name:    drbd-kmod
 Summary: Kernel module (kmod) for drbd9
-Version: 9.1.2
-Release: 2%{?dist}
+Version: 9.1.3
+Release: 1%{?dist}
 License: GPLv2
 URL:     http://www.drbd.org/
-Source0: https://linbit.com/downloads/drbd/9/drbd-%{version}.tar.gz
+Source0: https://pkg.linbit.com//downloads/drbd/9/drbd-%{version}.tar.gz
 
 BuildRequires:    %{_bindir}/kmodtool
 %{!?kernels:BuildRequires: gcc, elfutils-libelf-devel, kernel-devel}
@@ -58,6 +58,9 @@ done
 %{?akmod_install}
 
 %changelog
+* Sun Aug 15 2021 Madison Kelly <mkelly@alteeve.ca> - 9.1.3-1.el8
+- Updated source to 9.1.3.
+
 * Sat Jun 26 2021 Madison Kelly <mkelly@alteeve.ca> - 9.1.2-2.el8
 - Move to akmod infrastructure
 
