@@ -9,7 +9,7 @@
 Name:    drbd-kmod
 Summary: Kernel module (kmod) for drbd9
 Version: 9.1.5
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv2
 URL:     http://www.drbd.org/
 Source0: https://pkg.linbit.com//downloads/drbd/9/drbd-%{version}.tar.gz
@@ -18,7 +18,7 @@ BuildRequires:    %{_bindir}/kmodtool
 %{!?kernels:BuildRequires: gcc, elfutils-libelf-devel, kernel-devel}
 
 # kmodtool does its magic here
-%{expand:%(kmodtool --target %{_target_cpu} --repo rpmfusion --kmodname %{name} %{?buildforkernels:--%{buildforkernels}} %{?kernels:--for-kernels "%{?kernels}"} | sed -e "s#%if.*suse_version.*#%if 0%{?suse_version}#g" 2>/dev/null) }
+%{expand:%(kmodtool --target %{_target_cpu} --repo rpmfusion --kmodname %{name} %{?buildforkernels:--%{buildforkernels}} %{?kernels:--for-kernels "%{?kernels}"} 2>/dev/null) }
 
 %description
 DRBD is a distributed replicated block device. It mirrors a
@@ -58,6 +58,10 @@ done
 %{?akmod_install}
 
 %changelog
+* Mon Dec 20 2021 Madison Kelly <mkelly@alteeve.ca> - 9.1.5-2.el8
+- Updated source to 9.1.5.
+- Revert workaround for https://bugzilla.redhat.com/show_bug.cgi?id=2034193
+
 * Mon Dec 20 2021 Madison Kelly <mkelly@alteeve.ca> - 9.1.5-1.el8
 - Updated source to 9.1.5.
 - Add workaround for https://bugzilla.redhat.com/show_bug.cgi?id=2034193
