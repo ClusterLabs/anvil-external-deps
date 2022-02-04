@@ -50,14 +50,14 @@ gpgkey=file:///usr/share/distribution-gpg-keys/centos/RPM-GPG-KEY-CentOS-Officia
 
 [cr]
 name=CentOS-$releasever - cr
-baseurl=http://mirror.centos.org/centos/8/cr/$basearch/os/
+baseurl=http://mirror.centos.org/centos/8-stream/cr/$basearch/os/
 gpgcheck=1
 enabled=0
 gpgkey=file:///usr/share/distribution-gpg-keys/centos/RPM-GPG-KEY-CentOS-Official
 
 [ha]
 name=CentOS-Stream - HighAvailability
-baseurl=http://mirror.centos.org/centos/8/HighAvailability/$basearch/os/
+baseurl=http://mirror.centos.org/centos/8-stream/HighAvailability/$basearch/os/
 gpgcheck=1
 enabled=1
 gpgkey=file:///usr/share/distribution-gpg-keys/centos/RPM-GPG-KEY-CentOS-Official
