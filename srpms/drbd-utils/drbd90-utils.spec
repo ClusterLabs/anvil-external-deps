@@ -1,7 +1,7 @@
 %define real_name drbd-utils
 
 Name:    drbd90-utils
-Version: 9.19.1
+Version: 9.20.2
 Release: 1%{?dist}
 License: GPLv2+
 Summary: Management utilities for DRBD
@@ -146,6 +146,9 @@ fi
 %{_prefix}/lib/ocf/resource.d/linbit/drbd.shellfuncs.sh
 
 %changelog
+* Sun Feb 06 2022 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.20.2-1
+- Updated to 9.20.2.
+
 * Mon Dec 20 2021 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.19.1-1
 - Updated to 9.19.1.
 
