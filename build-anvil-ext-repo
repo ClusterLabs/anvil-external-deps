@@ -109,6 +109,7 @@ toplevel=$(pwd)
 mockconfig=$(pwd)/build/${distro}/mock.cfg
 localmockrepo=$(pwd)/build/${distro}/mockrepo
 localsrpms=$(pwd)/build/${distro}/srpms
+localmirror=$(pwd)/build/${distro}/mirror
 anvilsrpms=$(pwd)/srpms
 finalrepo=$(pwd)/build/${distro}/finalrepo
 
@@ -153,6 +154,61 @@ function init_mock() {
 	mock --update -r $mockconfig
 }
 
+function download_srpms() {
+	srpms="$@"
+	echo "Downloading $srpms"
+	mkdir -p $localmirror
+	cd $localmirror
+	cat > $localmirror/fedora-src.repo << EOF
+[anvil-fedora-source]
+name=Fedora \$releasever - Source
+metalink=https://mirrors.fedoraproject.org/metalink?repo=fedora-source-\$releasever&arch=\$basearch
+enabled=1
+repo_gpgcheck=0
+type=rpm
+gpgcheck=0
+skip_if_unavailable=False
+
+[anvil-updates-source]
+name=Fedora \$releasever - Updates Source
+metalink=https://mirrors.fedoraproject.org/metalink?repo=updates-released-source-f\$releasever&arch=\$basearch
+enabled=1
+repo_gpgcheck=0
+type=rpm
+gpgcheck=0
+skip_if_unavailable=False
+
+[anvil-fedora-modular-source]
+name=Fedora Modular \$releasever - Source
+metalink=https://mirrors.fedoraproject.org/metalink?repo=fedora-modular-source-\$releasever&arch=\$basearch
+enabled=1
+repo_gpgcheck=0
+type=rpm
+gpgcheck=0
+skip_if_unavailable=False
+
+[anvil-updates-modular-source]
+name=Fedora Modular \$releasever - Updates Source
+metalink=https://mirrors.fedoraproject.org/metalink?repo=updates-released-modular-source-f\$releasever&arch=\$basearch
+enabled=1
+repo_gpgcheck=0
+type=rpm
+gpgcheck=0
+skip_if_unavailable=False
+EOF
+	dnf download --source \
+		--config $localmirror/fedora-src.repo \
+		--releasever 36 \
+		--disablerepo="*" \
+		--enablerepo=anvil-fedora-source --enablerepo=anvil-updates-source \
+		--enablerepo=anvil-fedora-modular-source --enablerepo=anvil-updates-modular-source \
+		--installroot=$localmirror/installroot \
+		$srpms
+	mv $localmirror/*src.rpm $localsrpms/
+	cd $toplevel
+	rm -rf $localmirror
+}
+
 # generate all srpms based on the list provided by config/${distro}-package-list
 # if a package exists in srpms/ it will be given higher priority than
 # downloading the sources from fedora via fedpkg
@@ -163,8 +219,8 @@ function prep_srpms() {
 	if [ "$skipsrpms" = "1" ]; then
 		return
 	fi
+	cd $localsrpms
 	for i in $packagelist; do
-		cd $localsrpms
 		# check if local override exists
 		if [ -d "$anvilsrpms/$i" ]; then
 			echo "Local override for $i detected"
@@ -172,16 +228,12 @@ function prep_srpms() {
 			./build.sh
 			mv *.src.rpm $localsrpms/
 		else
-			fedpkg co --anonymous $i
-			cd $i
-			fedpkg switch-branch f36
-			fedpkg srpm
-			mv *.src.rpm $localsrpms/
-			cd -
-			rm -rf $i
+			downloads="$downloads $i"
 		fi
 		cd $toplevel
 	done
+	cd $toplevel
+	download_srpms "$downloads"
 }
 
 # concept of chain build is that we will continue to try builds
