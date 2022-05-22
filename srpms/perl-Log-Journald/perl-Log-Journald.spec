@@ -1,6 +1,6 @@
 Name:           perl-Log-Journald
 Version:        0.30
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Send messages to a systemd journal
 License:        GPL+ or Artistic
 Group:          Development/Libraries
@@ -8,6 +8,9 @@ URL:            http://search.cpan.org/dist/Log-Journald/
 Source0:        http://www.cpan.org/authors/id/L/LK/LKUNDRAK/Log-Journald-%{version}.tar.gz
 Patch0:         Log-Journald_sd_journal_sendv.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildRequires:  perl-interpreter
+BuildRequires:  perl-devel
+BuildRequires:  perl-generators
 BuildRequires:  perl(ExtUtils::CBuilder)
 BuildRequires:  perl(Module::Build)
 BuildRequires:  systemd-devel
@@ -51,6 +54,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 
 %changelog
+* Fri May 20 2022 Fabio M. Di Nitto <fabbione@fabbione.net> 0.30-2
+- Fix build on c9s
+
 * Mon Jan 07 2019 Madison Kelly <mkelly@alteeve.ca> 0.30-1
 - Updated codebase to 0.30.
 - Added the Log-Journald_sd_journal_sendv.patch patch.

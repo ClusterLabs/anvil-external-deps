@@ -2,7 +2,7 @@
 
 Name:    drbd90-utils
 Version: 9.21.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv2+
 Summary: Management utilities for DRBD
 URL:     http://www.drbd.org/
@@ -17,6 +17,7 @@ BuildRequires: libxslt
 BuildRequires: po4a
 BuildRequires: udev
 BuildRequires: systemd
+BuildRequires: gcc gcc-c++
 
 Requires: udev
 Requires(post):   systemd-units
@@ -146,6 +147,9 @@ fi
 %{_prefix}/lib/ocf/resource.d/linbit/drbd.shellfuncs.sh
 
 %changelog
+* Fri May 20 2022 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.21.1-2
+- Fix c9s BRs
+
 * Fri May 06 2022 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.21.1-1
 - Updated to 9.21.1.
 
