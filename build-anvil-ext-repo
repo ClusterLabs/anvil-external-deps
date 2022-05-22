@@ -34,7 +34,7 @@ function list_distros() {
 }
 
 # required tools to build archive and stuff
-tools="fedpkg mock wget rpmbuild createrepo"
+tools="mock wget rpmbuild createrepo"
 
 # set defaults
 distro=centos-8-stream
