@@ -196,9 +196,17 @@ type=rpm
 gpgcheck=0
 skip_if_unavailable=False
 EOF
+	case $distro in
+		centos-9-stream)
+			fedrelease=rawhide
+			;;
+		*)
+			fedrelease=36
+			;;
+	esac
 	dnf download --source \
 		--config $localmirror/fedora-src.repo \
-		--releasever 36 \
+		--releasever $fedrelease \
 		--disablerepo="*" \
 		--enablerepo=anvil-fedora-source --enablerepo=anvil-updates-source \
 		--enablerepo=anvil-fedora-modular-source --enablerepo=anvil-updates-modular-source \
