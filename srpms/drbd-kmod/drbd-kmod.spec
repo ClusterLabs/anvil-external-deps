@@ -58,7 +58,7 @@ done
 %{?akmod_install}
 
 %changelog
-* Tue Jul 66 2022 Madison Kelly <mkelly@alteeve.ca> - 9.1.8-1.el8
+* Tue Jul 26 2022 Madison Kelly <mkelly@alteeve.ca> - 9.1.8-1.el8
 - Updated source to 9.1.8.
 
 * Fri May 06 2022 Madison Kelly <mkelly@alteeve.ca> - 9.1.7-1.el8
