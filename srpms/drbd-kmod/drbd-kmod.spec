@@ -8,7 +8,7 @@
 
 Name:    drbd-kmod
 Summary: Kernel module (kmod) for drbd9
-Version: 9.1.9
+Version: 9.1.10
 Release: 1%{?dist}
 License: GPLv2
 URL:     http://www.drbd.org/
@@ -58,6 +58,9 @@ done
 %{?akmod_install}
 
 %changelog
+* Thu Sep 01 2022 Madison Kelly <mkelly@alteeve.ca> - 9.1.10-1.el8
+- Updated source to 9.1.10.
+
 * Tue Aug 30 2022 Madison Kelly <mkelly@alteeve.ca> - 9.1.9-1.el8
 - Updated source to 9.1.9.
 
