@@ -197,7 +197,7 @@ gpgcheck=0
 skip_if_unavailable=False
 EOF
 	case $distro in
-		centos-9-stream)
+		centos-9-stream|rhel-9)
 			fedrelease=rawhide
 			;;
 		*)
