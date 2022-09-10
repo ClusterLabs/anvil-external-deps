@@ -1,0 +1,1 @@
+@(smp?(-debug)|PAE?(-debug)|lpae|debug|kdump|xen|kirkwood|highbank|imx|omap|tegra|rt)

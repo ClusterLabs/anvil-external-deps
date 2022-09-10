@@ -1,0 +1,648 @@
+#!/bin/bash
+
+# kmodtool - Helper script for building kernel module RPMs
+# Copyright (c) 2003-2012 Ville Skyttä <ville.skytta@iki.fi>,
+#                         Thorsten Leemhuis <fedora@leemhuis.info>
+# Copyright (c) 2012-2019 Nicolas Chauvet <kwizart@gmail.com>
+# Copyright (c) 2017-2018 Nicolas Viéville <nicolas.vieville@uphf.fr>
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+shopt -s extglob
+
+myprog="kmodtool-${repo}"
+myver="0.12.1"
+
+kmodname=
+build_kernels="current"
+kernels_known_variants=
+kernel_versions=
+kernel_versions_to_build_for=
+filterfile=
+target=
+
+kernel_uname_r=""
+kernel_uname_r_vanilla=""
+kernel_uname_r_short=""
+kernel_uname_r_wo_arch=""
+kernel_uname_r_dist=""
+kernel_uname_r_rel=""
+kernel_uname_r_rel_plus_one=""
+kernel_uname_r_short_plus_one=""
+kernel_uname_r_rel_minor=""
+
+error_out()
+{
+	local errorlevel=${1}
+	shift
+	echo "Error: $@" >&2
+	# the next line is not multi-line safe -- not needed *yet*
+	echo "%global kmodtool_check echo \"kmodtool error: $@\"; exit ${errorlevel};"
+	exit ${errorlevel}
+}
+
+print_rpmtemplate_header()
+{
+	echo
+	echo '%global kmodinstdir_prefix  '${usr_lib_modules}/
+	echo '%global kmodinstdir_postfix '/extra/${kmodname}/
+	echo '%global kernel_versions     '${kernel_versions}
+	echo
+}
+
+init_kernel_uname_r_vars()
+{
+	## Build some interesting strings with kernel uname -r
+	## Examples:
+	##   - Fedora and rhel:
+	##     kernel_uname_r                3.10.0-693.2.2.el7.x86_64
+	##     kernel_uname_r_vanilla        3.10.0
+	##     kernel_uname_r_short          3.10.0-693.el7
+	##     kernel_uname_r_wo_arch        3.10.0-693.2.2.el7
+	##     kernel_uname_r_dist           el7
+	##     kernel_uname_r_rel            693
+	##     kernel_uname_r_rel_plus_one   694
+	##     kernel_uname_r_short_plus_one 3.10.0-694.el7
+	##     kernel_uname_r_rel_minor      2.2
+	##
+	kernel_uname_r=${1}
+	kernel_uname_r_vanilla=$(echo ${1} | sed -n -e "s/\.${target}//" -e "s/\([[:alnum:]\.]\+\|\)-\(.*\)/\1/p")
+	kernel_uname_r_short=$(echo ${1} | sed -n -e "s/\.${target}//" -e "s/\(.*\)-\([[:alnum:]]\+\)\(\.[[:alnum:]\.]\+\|\)\(\.el.*\|\.fc.*\)/\1-\2\4/p")
+	kernel_uname_r_wo_arch=$(echo ${1} | sed -e "s/\.${target}//")
+	kernel_uname_r_dist=$(echo ${1} | sed -n -e "s/\.${target}//" -e "s/\(.*\)-\([[:alnum:]]\+\.[[:alnum:]]\+\-\|[[:alnum:]]\+\)\([[:alnum:]\.]\+\|\)\(\.el.*\|\.fc.*\)/\4/" -e "s/^\.//p")
+	kernel_uname_r_rel=$(echo ${1} | sed -n -e "s/\.${target}//" -e "s/\(.*\)-\([[:alnum:]]\+\.[[:alnum:]]\+\-\|[[:alnum:]]\+\.\)\([[:alnum:]\.]\+\|\)\(.*\)/\2/" -e "s/^\.//" -e "s/[\.\-]$//p")
+	if $(echo "${kernel_uname_r_rel}" | grep -qE '^[0-9]+$') ; then
+		kernel_uname_r_rel_plus_one=$(( kernel_uname_r_rel+1 ))
+	else
+		kernel_uname_r_rel_plus_one=""
+	fi
+	kernel_uname_r_short_plus_one=$(echo ${kernel_uname_r_short} | sed -e "s/(//" -e "s/-${kernel_uname_r_rel}\./-${kernel_uname_r_rel_plus_one}\./")
+	kernel_uname_r_rel_minor=$(echo ${1} | sed -n -e "s/\.${target}//" -e "s/\(.*\)-\([[:alnum:]]\+\.[[:alnum:]]\+\-\|[[:alnum:]]\+\.\)\([[:alnum:]\.]\+\|\)\(\.el.*\|\.fc.*\)/\3/" -e "s/^\.//p")
+}
+
+print_rpmtemplate_macros()
+{
+	# Defines package names macros depending on distributions (default
+	# is Fedora):
+	# - rhel_kabi is set if building for RHEL
+	# - kmod_pkg_name and pkg_kmod_name are the two possible forms of
+	#   the package name used when building packages modules. First one
+	#   uses kmod as prefix, the second one uses kmod as suffix. These
+	#   macros allow to modify the naming schema regarding the target
+	#   distribution (for example with suffix and prefix different from
+	#   kmod).
+	# - kmod_obsolete_name same as kmod_pkg_name and pkg_kmod_name but
+	#   for obsolete package name
+	#
+	if [[ -n ${obsolete_name} ]] ; then
+		echo '%global obsolete_name '${obsolete_name}
+	fi
+	cat <<EOF
+
+%{?rhel:%global with_rhel_kabi 1}
+
+%if 0%{?rhel} || 0%{?fedora}
+%global kmod_pkg_name kmod-${kmodname}
+%global pkg_kmod_name ${kmodname}-kmod
+%{?obsolete_name:%global kmod_obsolete_name kmod-%{obsolete_name}}
+%endif
+EOF
+}
+
+print_rpmtemplate_macros_pkg_name_version()
+{
+	# Defines package name with kernel version macros (depends on
+	# init_kernel_uname_r_vars for kernel_uname_r* variables):
+	# - rhel_kabi is set if building for RHEL
+	# - kmod_for_kernel defines target kernel version string
+	# - package_kmod_name complete package name including target kernel
+	#   version
+	#
+	init_kernel_uname_r_vars ${1}
+	cat <<EOF
+
+%if 0%{?rhel} || 0%{?fedora}
+%global kmod_for_kernel %{?with_rhel_kabi:${kernel_uname_r_short}}%{!?with_rhel_kabi:${kernel_uname_r}}
+%global package_kmod_name %{kmod_pkg_name}-%{kmod_for_kernel}
+%endif
+EOF
+}
+
+print_akmodtemplate ()
+{
+	echo
+	cat <<EOF
+
+%global akmod_install mkdir -p \$RPM_BUILD_ROOT/%{_usrsrc}/akmods/; \\\
+rpmbuild --define "_sourcedir %{_sourcedir}" \\\
+--define "_srcrpmdir \$RPM_BUILD_ROOT/%{_usrsrc}/akmods/" \\\
+%{?dist:--define 'dist %{dist}}' \\\
+-bs --nodeps %{_specdir}/%{name}.spec ; \\\
+ln -s \$(ls \$RPM_BUILD_ROOT/%{_usrsrc}/akmods/) \$RPM_BUILD_ROOT/%{_usrsrc}/akmods/%{pkg_kmod_name}.latest
+
+%package       -n akmod-${kmodname}
+Summary:          Akmod package for ${kmodname} kernel module(s)
+Requires:         kmodtool
+Requires:         akmods
+%{?AkmodsBuildRequires:Requires: %{AkmodsBuildRequires}}
+# same requires and provides as a kmods package would have
+Requires:         %{pkg_kmod_name}-common >= %{?epoch:%{epoch}:}%{version}
+Provides:         %{pkg_kmod_name} = %{?epoch:%{epoch}:}%{version}-%{release}
+EOF
+
+	if [[ -n "${obsolete_name}" ]] ; then
+		echo "Provides:         akmod-${obsolete_name} = ${obsolete_version}"
+		echo "Obsoletes:        akmod-${obsolete_name} < ${obsolete_version}"
+	fi
+
+	cat <<EOF
+
+%description   -n akmod-${kmodname}
+This package provides the akmod package for the ${kmodname} kernel modules.
+
+%posttrans     -n akmod-${kmodname}
+nohup /usr/sbin/akmods --from-akmod-posttrans --akmod ${kmodname} &> /dev/null &
+
+%post     -n akmod-${kmodname}
+[ -x /usr/sbin/akmods-ostree-post ] && /usr/sbin/akmods-ostree-post ${kmodname} %{_usrsrc}/akmods/%{pkg_kmod_name}-%{version}-%{release}.src.rpm
+
+%files         -n akmod-${kmodname}
+%defattr(-,root,root,-)
+%{_usrsrc}/akmods/*
+EOF
+}
+
+print_akmodmeta ()
+{
+	cat <<EOF
+
+%package       -n %{kmod_pkg_name}
+Summary:          Metapackage which tracks in ${kmodname} kernel module for newest kernel
+
+Provides:         %{pkg_kmod_name} = %{?epoch:%{epoch}:}%{version}-%{release}
+Provides:         %{kmod_pkg_name}-xen = %{?epoch:%{epoch}:}%{version}-%{release}
+Provides:         %{kmod_pkg_name}-smp = %{?epoch:%{epoch}:}%{version}-%{release}
+Provides:         %{kmod_pkg_name}-PAE = %{?epoch:%{epoch}:}%{version}-%{release}
+Requires:         akmod-${kmodname} = %{?epoch:%{epoch}:}%{version}-%{release}
+EOF
+
+	if [[ -n "${obsolete_name}" ]] ; then
+		echo "Provides:         %{kmod_obsolete_name} = ${obsolete_version}"
+		echo "Obsoletes:        %{kmod_obsolete_name} < ${obsolete_version}"
+	fi
+	cat <<EOF
+
+%description   -n %{kmod_pkg_name}
+This is a meta-package without payload which sole purpose is to require the
+${kmodname} kernel module(s) for the newest kernel,
+to make sure you get it together with a new kernel.
+
+%files         -n %{kmod_pkg_name}
+%defattr(644,root,root,755)
+EOF
+}
+
+print_rpmtemplate_per_kmodpkg ()
+{
+	if [[ "${1}" == "--custom" ]] ; then
+		shift
+		local customkernel=true
+	elif [[ "${1}" == "--redhat" ]] ; then
+		# this is needed for akmods
+		shift
+		local redhatkernel=true
+	fi
+
+	if [[ -h /sbin ]] ; then
+		echo '%global  _prefix_usr      '/usr
+	fi
+
+	# first part
+	#
+	# According to:
+	#     https://github.com/rpm-software-management/yum/blob/master/yum/config.py#L780
+	#     https://github.com/rpm-software-management/dnf/blob/master/dnf/const.py.in#L30
+	#
+	# and in order to be able to co-install multiples packages with the
+	# same name but different version on RHEL without upgrading theme,
+	# one has to add in package section:
+	#     Provides: installonlypkg(kernel-module)
+	cat <<EOF
+
+%package       -n %{package_kmod_name}
+Summary:          ${kmodname} kernel module(s) for %{kmod_for_kernel}
+Provides:         kernel-modules%{!?with_rhel_kabi:-for-kernel} = ${kernel_uname_r}
+%if %{with rhel_kabi}
+Provides:         installonlypkg(kernel-module)
+%endif
+Provides:         %{pkg_kmod_name} = %{?epoch:%{epoch}:}%{version}-%{release}
+Requires:         %{pkg_kmod_name}-common >= %{?epoch:%{epoch}:}%{version}
+Requires(post):   %{?_prefix_usr}/sbin/depmod
+Requires(postun): %{?_prefix_usr}/sbin/depmod
+%if %{with rhel_kabi}
+Requires(post):   %{?_prefix_usr}/sbin/weak-modules
+Requires(postun): %{?_prefix_usr}/sbin/weak-modules
+%endif
+EOF
+
+	if [[ -n "${obsolete_name}" ]] ; then
+		echo
+		echo "Provides:         %{kmod_obsolete_name}-${kernel_uname_r} = ${obsolete_version}"
+		echo "Obsoletes:        %{kmod_obsolete_name}-${kernel_uname_r} < ${obsolete_version}"
+	fi
+
+	# second part
+	if [[ ! -n "${customkernel}" ]] ; then
+		cat <<EOF
+%global _kmodtool_depmod_post \\\
+if [ -f /boot/System.map-${kernel_uname_r} ] ; then \\\
+  %{?_prefix_usr}/sbin/depmod -aeF /boot/System.map-${kernel_uname_r} ${kernel_uname_r} >/dev/null ; \\\
+elif [ -f /lib/modules/${kernel_uname_r}/System.map ] ; then \\\
+  %{?_prefix_usr}/sbin/depmod -aeF /lib/modules/${kernel_uname_r}/System.map ${kernel_uname_r} >/dev/null ; \\\
+else \\\
+  %{?_prefix_usr}/sbin/depmod -a >/dev/null ; \\\
+fi || :
+
+%if %{with rhel_kabi}
+Requires:         kernel >= ${kernel_uname_r_short}
+Requires:         kernel < ${kernel_uname_r_short_plus_one}
+BuildRequires:    kernel-devel = ${kernel_uname_r_wo_arch} redhat-rpm-config
+%else
+Requires:         kernel-uname-r = ${kernel_uname_r}
+BuildRequires:    kernel-devel-uname-r = ${kernel_uname_r}
+BuildRequires:    gcc
+%endif
+
+%post          -n %{package_kmod_name}
+%{_kmodtool_depmod_post}
+
+%if %{with rhel_kabi}
+modules=( \$(find ${usr_lib_modules}/${kernel_uname_r}/extra/${kmodname}/ -name "*.ko"  -o -name "*.ko.xz") )
+printf '%s\n' "\${modules[@]}" | %{?_prefix_usr}/sbin/weak-modules --add-modules
+%endif
+
+%if %{with rhel_kabi}
+%preun         -n %{package_kmod_name}
+rpm -ql %{package_kmod_name}-%{version}-%{release}.$(arch) | grep -e '\.ko$' -e '\.ko.xz$' > /var/run/rpm-%{package_kmod_name}-modules
+%endif
+
+%postun        -n %{package_kmod_name}
+%{_kmodtool_depmod_post}
+
+%if %{with rhel_kabi}
+modules=( \$(cat /var/run/rpm-%{package_kmod_name}-modules) )
+rm -f /var/run/rpm-%{package_kmod_name}-modules
+printf '%s\n' "\${modules[@]}" | %{?_prefix_usr}/sbin/weak-modules --remove-modules
+%endif
+EOF
+	else
+		cat <<EOF
+
+%post          -n %{package_kmod_name}
+[[ "\$(uname -r)" == "${kernel_uname_r}"  ]] && %{?_prefix_usr}/sbin/depmod -a > /dev/null || :
+
+%if %{with rhel_kabi}
+if [[ "\$(uname -r)" == "${kernel_uname_r}"  ]] ; then
+	modules=( \$(find ${usr_lib_modules}/${kernel_uname_r}/extra/${kmodname}/ -name "*.ko"  -o -name "*.ko.xz") )
+	printf '%s\n' "\${modules[@]}" | %{?_prefix_usr}/sbin/weak-modules --add-modules
+fi
+%endif
+
+%if %{with rhel_kabi}
+%preun         -n %{package_kmod_name}
+if [[ "\$(uname -r)" == "${kernel_uname_r}"  ]] ; then
+	rpm -ql %{package_kmod_name}-%{version}-%{release}.$(arch) | grep -e '\.ko$' -e '\.ko.xz$' > /var/run/rpm-%{package_kmod_name}-modules
+fi
+%endif
+
+%postun        -n %{package_kmod_name}
+[[ "\$(uname -r)" == "${kernel_uname_r}"  ]] && %{?_prefix_usr}/sbin/depmod -a > /dev/null || :
+
+%if %{with rhel_kabi}
+if [[ "\$(uname -r)" == "${kernel_uname_r}"  ]] ; then
+	modules=( \$(cat /var/run/rpm-%{package_kmod_name}-modules) )
+	rm -f /var/run/rpm-%{package_kmod_name}-modules
+	printf '%s\n' "\${modules[@]}" | %{?_prefix_usr}/sbin/weak-modules --remove-modules
+fi
+%endif
+EOF
+	fi
+
+	# third part
+	cat <<EOF
+
+%description   -n %{package_kmod_name}
+This package provides the ${kmodname} kernel modules built for the Linux
+kernel %{kmod_for_kernel} for the %{_target_cpu} family of processors.
+%files         -n %{package_kmod_name}
+%defattr(644,root,root,755)
+%dir ${usr_lib_modules}/${kernel_uname_r}/extra
+${usr_lib_modules}/${kernel_uname_r}/extra/${kmodname}/
+EOF
+
+	## Set global macros and update global __spec_install_post macro to
+	## take in account signing and zipping macros provided in
+	## /etc/rpm/macros.kmodtool file.
+	## The global __spec_install_post macro is set per package build and
+	## is not included in the global /etc/rpm/macros.kmodtool file to
+	## avoid unwanted effects on other packages builds.
+	## For further explanations see comments included in
+	## /etc/rpm/macros.kmodtool file.
+
+# Comment from Fedora kernel.spec about this hack. FIXME candidate.
+#
+# Disgusting hack alert! We need to ensure we sign modules *after* all
+# invocations of strip occur, which is in __debug_install_post if
+# find-debuginfo.sh runs, and __os_install_post if not.
+#
+    cat <<EOF
+
+%global __kmodtool_kernel_uname_r ${kernel_uname_r}
+%global __spec_install_post \\
+  %{?__debug_package:%{__debug_install_post}}\\
+  %{__arch_install_post}\\
+  %{__os_install_post}\\
+  %{?__kmodtool_signmodules:%{__kmodtool_modsign_install_post}}\\
+  %{?__kmodtool_zipmodules:%{__kmodtool_modzip_install_post}}
+EOF
+}
+
+print_rpmtemplate_kmodmetapkg ()
+{
+		local kernel_variant="${1:+-${1}}"
+
+		cat <<EOF
+
+%package       -n %{kmod_pkg_name}${kernel_variant}
+Summary:          Metapackage which tracks in ${kmodname} kernel module for newest kernel${kernel_variant}
+
+Provides:         %{pkg_kmod_name} = %{?epoch:%{epoch}:}%{version}-%{release}
+Requires:         %{package_kmod_name} >= %{?epoch:%{epoch}:}%{version}-%{release}
+EOF
+
+		if [[ -n "${obsolete_name}" ]] ; then
+			echo "Provides:         %{kmod_obsolete_name}${kernel_variant} = ${obsolete_version}"
+			echo "Obsoletes:        %{kmod_obsolete_name}${kernel_variant} < ${obsolete_version}"
+		fi
+
+		cat <<EOF
+
+%description   -n %{kmod_pkg_name}${kernel_variant}
+This is a meta-package without payload which sole purpose is to require the
+${kmodname} kernel module(s) for the newest kernel${kernel_variant}.
+to make sure you get it together with a new kernel.
+
+%files         -n %{kmod_pkg_name}${kernel_variant}
+%defattr(644,root,root,755)
+
+
+EOF
+}
+
+print_customrpmtemplate ()
+{
+	for kernel in ${1}
+	do
+		if [[ -e "/usr/src/kernels/${kernel}" ]] ; then
+			# this looks like a Fedora/RH kernel -- print a normal template (which includes the proper BR) and be happy :)
+			kernel_versions="${kernel_versions}${kernel}___%{_usrsrc}/kernels/${kernel} "
+
+			# parse kernel versions string and print template
+			local kernel_verrelarch=${kernel%%${kernels_known_variants}}
+			print_rpmtemplate_macros_pkg_name_version "${kernel}"
+			print_rpmtemplate_per_kmodpkg --redhat ${kernel##${kernel_verrelarch}}
+		elif [[ -e "${usr_lib_modules}"/"${kernel}"/source/Makefile ]] ; then
+			# likely a user-build-kernel with available buildfiles
+			# check if uname from Makefile is the same as ${kernel}
+			KMF_VERSION="$(grep -m1 -e "^VERSION = " "${usr_lib_modules}"/"${kernel}"/source/Makefile | sed -e 's/^.*= //g')"
+			KMF_PATCHLEVEL="$(grep -m1 -e "^PATCHLEVEL = " "${usr_lib_modules}"/"${kernel}"/source/Makefile | sed -e 's/^.*= //g')"
+			KMF_SUBLEVEL="$(grep -m1 -e "^SUBLEVEL = " "${usr_lib_modules}"/"${kernel}"/source/Makefile | sed -e 's/^.*= //g')"
+			KMF_EXTRAVERSION="$(grep -m1 -e "^EXTRAVERSION = " "${usr_lib_modules}"/"${kernel}"/source/Makefile | sed -e 's/^.*= //g')"
+			# Bundled bonus
+			#KMF_NAME="$(grep -m1 -e "^NAME = " "${usr_lib_modules}"/"${kernel}"/source/Makefile | sed -e 's/^.*= //g')"
+			if [[ "${KMF_VERSION}.${KMF_PATCHLEVEL}.${KMF_SUBLEVEL}${KMF_EXTRAVERSION}" == "${kernel}" ]] ; then
+				kernel_versions="${kernel_versions}${kernel}___${usr_lib_modules}/${kernel}/source/ "
+				print_rpmtemplate_macros_pkg_name_version "${kernel}"
+				print_rpmtemplate_per_kmodpkg --custom
+			else
+				error_out 2 "Kernel uname from ${usr_lib_modules}/${kernel}/source/Makefile doesn't match ${kernel} from --for-kernels argument."
+			fi
+		else
+			error_out 2 "Don't know how to handle ${kernel} -- ${usr_lib_modules}/${kernel}/source/Makefile not found"
+		fi
+	done
+
+	# well, it's no header anymore, but who cares ;-)
+	print_rpmtemplate_header
+}
+
+
+print_rpmtemplate ()
+{
+	# create kernel_versions var
+	for kernel_version in ${kernel_versions_to_build_for}
+	do
+		kernel_versions="${kernel_versions}${kernel_version}___%{_usrsrc}/kernels/${kernel_version} "
+	done
+
+	# and print it and some other required stuff as macro
+	print_rpmtemplate_header
+
+	# now print the packages itselfs
+	for kernel in ${kernel_versions_to_build_for} ; do
+
+		local kernel_verrelarch=${kernel%%${kernels_known_variants}}
+
+		print_rpmtemplate_macros_pkg_name_version "${kernel}"
+
+		# create metapackage
+		print_rpmtemplate_kmodmetapkg ${kernel##${kernel_verrelarch}}
+
+		# create package
+		print_rpmtemplate_per_kmodpkg ${kernel##${kernel_verrelarch}}
+	done
+}
+
+myprog_help ()
+{
+	echo "Usage: $(basename ${0}) [OPTIONS]"
+	echo $'\n'"Creates a template to be used during kmod building"
+	echo $'\n'"Available options:"
+	# FIXME echo " --datadir <dir>     -- look for our shared files in <dir>"
+	echo " --filterfile <file>  -- filter the results with grep --file <file>"
+	echo " --for-kernels <list> -- created templates only for these kernels"
+	echo " --kmodname <file>    -- name of the kmod (required)"
+	echo " --noakmod            -- no akmod package"
+	echo " --repo <name>        -- use buildsys-build-<name>-kerneldevpkgs"
+	echo " --target <arch>      -- target-arch (required)"
+}
+
+while [ "${1}" ] ; do
+	case "${1}" in
+		--filterfile)
+			shift
+			if [[ ! -n "${1}" ]] ; then
+				error_out 2 "Please provide path to a filter-file together with --filterfile" >&2
+			elif [[ ! -e "${1}" ]] ; then
+				error_out 2 "Filterfile ${1} not found" >&2
+			fi
+			filterfile="${1}"
+			shift
+			;;
+		--kmodname)
+			shift
+			if [[ ! -n "${1}" ]] ; then
+				error_out 2 "Please provide the name of the kmod together with --kmodname" >&2
+			fi
+			# strip pending -kmod
+			kmodname="${1%%-kmod}"
+			shift
+			;;
+		--repo)
+			shift
+			if [[ ! -n "${1}" ]] ; then
+				error_out 2 "Please provide the name of the repo together with --repo" >&2
+			fi
+			repo=${1}
+			shift
+			;;
+		--for-kernels)
+			shift
+			if [[ ! -n "${1}" ]] ; then
+				error_out 2 "Please provide the name of the kmod together with --kmodname" >&2
+			fi
+			for_kernels="${1}"
+			shift
+			;;
+		--noakmod)
+			shift
+			noakmod="true"
+			;;
+		--obsolete-name)
+			shift
+			if [[ ! -n "${1}" ]] ; then
+				error_out 2 "Please provide the name of the kmod to obsolte together with --obsolete-name" >&2
+			fi
+			obsolete_name="${1}"
+			shift
+			;;
+		--obsolete-version)
+			shift
+			if [[ ! -n "${1}" ]] ; then
+				error_out 2 "Please provide the version of the kmod to obsolte together with --obsolete-version" >&2
+			fi
+			obsolete_version="${1}"
+			shift
+			;;
+		--target)
+			shift
+			target="${1}"
+			shift
+			;;
+		--akmod)
+			shift
+			build_kernels="akmod"
+			;;
+		--newest)
+			shift
+			build_kernels="newest"
+			;;
+		--current)
+			shift
+			build_kernels="current"
+			;;
+		--help)
+			myprog_help
+			exit 0
+			;;
+		--version)
+			echo "${myprog} ${myver}"
+			exit 0
+			;;
+		*)
+			echo "Error: Unknown option '${1}'." >&2
+			usage >&2
+			exit 2
+			;;
+	esac
+done
+
+# These should always be in /lib/modules
+# as that's how the kernel package lays them out
+usr_lib_modules=/lib/modules
+
+if [[ -e ./kmodtool-kernel-variants ]] ; then
+	kernels_known_variants="$(cat ./kmodtool-kernel-variants)"
+elif [[ -e /usr/share/kmodtool/kernel-variants ]] ; then
+	kernels_known_variants="$(cat /usr/share/kmodtool/kernel-variants)"
+else
+	error_out 2  "Could not find /usr/share/kmodtool/kernel-variants"
+fi
+
+# general sanity checks
+if [[ ! -n "${target}" ]] ; then
+	error_out 2 "please pass target arch with --target"
+elif [[ ! -n "${kmodname}" ]] ; then
+	error_out 2 "please pass kmodname with --kmodname"
+elif [[ ! -n "${kernels_known_variants}" ]] ; then
+	error_out 2 "could not determine known variants"
+elif ( [[ -n "${obsolete_name}" ]] && [[ ! -n "${obsolete_version}" ]] ) ||  ( [[ ! -n "${obsolete_name}" ]] && [[ -n "${obsolete_version}" ]] ) ; then
+	error_out 2 "you need to provide both --obsolete-name and --obsolete-version"
+fi
+
+# go
+print_rpmtemplate_macros
+if [[ -n "${for_kernels}" ]] ; then
+	# this is easy:
+	print_customrpmtemplate "${for_kernels}"
+elif [[ "${build_kernels}" == "akmod" ]] ; then
+	# do only a akmod package
+	print_akmodtemplate
+	print_akmodmeta
+else
+	# seems we are on out own to decide for which kernels to build
+
+	# we need more sanity checks in this case
+	if [[ ! -n "${repo}" ]] ; then
+		error_out 2 "please provide repo name with --repo"
+	elif ! $(which buildsys-build-${repo}-kerneldevpkgs &> /dev/null) ; then
+		error_out 2 "buildsys-build-${repo}-kerneldevpkgs not found"
+	fi
+
+	# call buildsys-build-${repo}-kerneldevpkgs to get the list of kernels
+	cmdoptions="--target ${target}"
+
+	# filterfile to filter list of kernels?
+	if [[ -n "${filterfile}" ]] ; then
+		cmdoptions="${cmdoptions} --filterfile ${filterfile}"
+	fi
+
+	kernel_versions_to_build_for="$(buildsys-build-${repo}-kerneldevpkgs --${build_kernels} ${cmdoptions})"
+	returncode=$?
+	if (( ${returncode} != 0 )) ; then
+		error_out 2 "buildsys-build-${repo}-kerneldevpkgs failed: $(buildsys-build-${repo}-kerneldevpkgs --${build_kernels} ${cmdoptions})"
+	fi
+
+	if [[ "${build_kernels}" == "current" ]] && [[ ! -n "${noakmod}" ]] ; then
+		print_akmodtemplate
+	fi
+
+	print_rpmtemplate
+fi
