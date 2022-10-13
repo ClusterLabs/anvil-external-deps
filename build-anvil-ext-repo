@@ -198,7 +198,7 @@ skip_if_unavailable=False
 EOF
 	case $distro in
 		centos-9-stream)
-			fedrelease=rawhide
+			fedrelease=37
 			;;
 		*)
 			fedrelease=36
