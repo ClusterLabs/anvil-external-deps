@@ -1,7 +1,7 @@
 %define real_name drbd-utils
 
 Name:    drbd90-utils
-Version: 9.23.0
+Version: 9.23.1
 Release: 1%{?dist}
 License: GPLv2+
 Summary: Management utilities for DRBD
@@ -148,6 +148,9 @@ fi
 %{_prefix}/lib/ocf/resource.d/linbit/drbd.shellfuncs.sh
 
 %changelog
+* Wed Mar 15 2023 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.23.1-1
+- Update for new drbd-kmod
+
 * Thu Mar 02 2023 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.23.0-1
 - Update for new drbd-kmod
 
