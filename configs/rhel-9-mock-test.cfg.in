@@ -1,0 +1,15 @@
+include('rhel-9-x86_64.cfg')
+
+config_opts['dnf.conf'] += """
+[anvil-local]
+name=anvil-local
+baseurl=file://@FINALREPO@
+gpgcheck=0
+enabled=1
+skip_if_unavailable=True
+module_hotfixes=1
+"""
+
+config_opts['root'] = 'anvil-rhel-9-test'
+config_opts['target_arch'] = 'x86_64'
+config_opts['legal_host_arches'] = ('x86_64',)

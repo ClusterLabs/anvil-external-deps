@@ -93,7 +93,7 @@ function check_requirements() {
 }
 
 function check_distro() {
-	for i in ${distro}-mock.cfg.in ${distro}-package-list; do
+	for i in ${distro}-mock-build.cfg.in ${distro}-mock-test.cfg.in ${distro}-package-list; do
 		if [ ! -f "configs/$i" ]; then
 			echo "Error! Distribution ${distro} is currently missing configs/$i. Please add related config files"
 			exit 1
@@ -106,7 +106,8 @@ function check_distro() {
 # set common variables
 
 toplevel=$(pwd)
-mockconfig=$(pwd)/build/${distro}/mock.cfg
+mockbuildconfig=$(pwd)/build/${distro}/mock-build.cfg
+mocktestconfig=$(pwd)/build/${distro}/mock-test.cfg
 localmockrepo=$(pwd)/build/${distro}/mockrepo
 localsrpms=$(pwd)/build/${distro}/srpms
 localmirror=$(pwd)/build/${distro}/mirror
@@ -119,9 +120,13 @@ function cleanup() {
 		rm -rf ${localsrpms}
 	fi
 	if [ "$wipemock" = "1" ]; then
-		if [ -f $mockconfig ]; then
-			mock --scrub=all -r $mockconfig
-			rm -rf $mockconfig
+		if [ -f $mockbuildconfig ]; then
+			mock --scrub=all -r $mockbuildconfig
+			rm -rf $mockbuildconfig
+		fi
+		if [ -f $mocktestconfig ]; then
+			mock --scrub=all -r $mocktestconfig
+			rm -rf $mocktestconfig
 		fi
 	fi
 	if [ -n "$1" ]; then
@@ -135,13 +140,17 @@ function create_dirs() {
 	mkdir -p $finalrepo
 }
 
-function prep_mock_config() {
-	cat configs/${distro}-mock.cfg.in | \
-		sed -e 's#@LOCALREPO@#'$localmockrepo'/results/mock#g' \
-		> ${mockconfig}
+function prep_mock_configs() {
+	cat configs/${distro}-mock-build.cfg.in | \
+		sed -e 's#@LOCALREPO@#'$localmockrepo'/results/mock-build#g' \
+		> ${mockbuildconfig}
+	cat configs/${distro}-mock-test.cfg.in | \
+		sed -e 's#@FINALREPO@#'$finalrepo'/rpms#g' \
+		> ${mocktestconfig}
 }
 
 function init_mock() {
+	mockconfig="$1"
 	if [ "$skipchroot" = "1" ]; then
 		return
 	fi
@@ -261,7 +270,7 @@ function build_rpms() {
 
 	current=0
 	while [ $current -le $count ]; do
-		if mock --enable-network -r $mockconfig --localrepo=$localmockrepo --continue --chain $localsrpms/*.src.rpm; then
+		if mock --enable-network -r $mockbuildconfig --localrepo=$localmockrepo --continue --chain $localsrpms/*.src.rpm; then
 			echo "Built complited in $current loops"
 			return
 		fi
@@ -282,15 +291,32 @@ function build_final_repo() {
 	mkdir -p debuginfo
 	mkdir -p srpms
 	# move stuff in place
-	mv *.src.rpm srpms/
-	mv *debuginfo*.rpm *debugsource*.rpm debuginfo/
-	mv *noarch*.rpm rpms/noarch/
-	mv *.rpm rpms/$(uname -m)/
+	if [ -n "$(ls *.src.rpm 2>/dev/null)" ]; then
+		mv *.src.rpm srpms/
+	fi
+	if [ -n "$(ls *debuginfo*.rpm 2>/dev/null)" ]; then
+		mv *debuginfo*.rpm *debugsource*.rpm debuginfo/
+	fi
+	if [ -n "$(ls *noarch*.rpm 2>/dev/null)" ]; then
+		mv *noarch*.rpm rpms/noarch/
+	fi
+	if [ -n "$(ls *.rpm 2>/dev/null)" ]; then
+		mv *.rpm rpms/$(uname -m)/
+	fi
 	# create repo here
 	for i in rpms srpms debuginfo; do
 		cd $i
 		createrepo .
 		cd -
+	done
+}
+
+function validate_final_repo() {
+	cd $finalrepo/rpms
+	rpms=$(find . -name "*.rpm")
+	for i in $rpms; do
+		echo "Validating installability of $i"
+		mock --no-clean --no-cleanup-after --enable-network -r $mocktestconfig --install $i
 	done
 }
 
@@ -388,8 +414,8 @@ cleanup
 create_dirs
 
 # init mock
-prep_mock_config
-init_mock
+prep_mock_configs
+init_mock $mockbuildconfig
 
 # get package list (common to multiple functions)
 
@@ -401,6 +427,10 @@ prep_srpms
 build_rpms
 
 build_final_repo
+
+init_mock $mocktestconfig
+validate_final_repo
+
 publish_repo
 
 cleanup 0

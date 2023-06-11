@@ -1,0 +1,14 @@
+include('templates/centos-stream-9.tpl')
+
+config_opts['dnf.conf'] += """
+[anvil-local]
+name=anvil-local
+baseurl=file://@FINALREPO@
+gpgcheck=0
+enabled=1
+skip_if_unavailable=True
+"""
+
+config_opts['root'] = 'anvil-centos-9-stream-test'
+config_opts['target_arch'] = 'x86_64'
+config_opts['legal_host_arches'] = ('x86_64',)
