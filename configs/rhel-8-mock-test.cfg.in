@@ -1,4 +1,4 @@
-include('rhel-8-x86_64.cfg')
+include('templates/rhel-9.tpl')
 
 config_opts['dnf.conf'] += """
 [anvil-local]
