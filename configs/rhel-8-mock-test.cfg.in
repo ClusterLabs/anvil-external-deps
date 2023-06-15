@@ -1,11 +1,31 @@
 include('templates/rhel-8.tpl')
 
 config_opts['dnf.conf'] += """
+[ha]
+name = Red Hat Enterprise Linux - High Availability
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/$basearch/highavailability/os
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/{{ redhat_subscription_key_id }}-key.pem
+sslclientcert = /etc/pki/entitlement/{{ redhat_subscription_key_id }}.pem
+gpgkey=file:///usr/share/distribution-gpg-keys/redhat/RPM-GPG-KEY-redhat8-release
+skip_if_unavailable=False
+
 [anvil-local]
 name=anvil-local
 baseurl=file://@FINALREPO@
 gpgcheck=0
 enabled=1
+skip_if_unavailable=True
+module_hotfixes=1
+
+[anvil-main-anvil-ci-rhel-8]
+name=anvil-main-anvil-ci-rhel-8
+baseurl=https://kronosnet.org/builds/anvil/anvil-ci-rhel-8/main/latest/
+repo_gpgcheck=0
+enabled=1
+gpgcheck=0
+metadata_expire=1d
 skip_if_unavailable=True
 module_hotfixes=1
 """

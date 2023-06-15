@@ -7,6 +7,16 @@ baseurl=file://@FINALREPO@
 gpgcheck=0
 enabled=1
 skip_if_unavailable=True
+
+[anvil-main-anvil-ci-centos-9-stream]
+name=anvil-main-anvil-ci-centos-9-stream
+baseurl=https://kronosnet.org/builds/anvil/anvil-ci-centos-9-stream/main/latest/
+repo_gpgcheck=0
+enabled=1
+gpgcheck=0
+metadata_expire=1d
+skip_if_unavailable=True
+module_hotfixes=1
 """
 
 config_opts['root'] = 'anvil-centos-9-stream-test'

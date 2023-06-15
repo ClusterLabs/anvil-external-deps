@@ -312,11 +312,18 @@ function build_final_repo() {
 }
 
 function validate_final_repo() {
-	cd $finalrepo/rpms
-	rpms=$(find . -name "*.rpm")
-	for i in $rpms; do
-		echo "Validating installability of $i"
-		mock --no-clean --no-cleanup-after --enable-network -r $mocktestconfig --install $i
+	case $distro in
+		centos-9-stream|rhel-9)
+			harepo="highavailability"
+		;;
+		centos-8-stream|rhel-8)
+			harepo="ha"
+		;;
+	esac
+
+	for i in anvil-core anvil-striker anvil-node anvil-dr; do
+		mock --enable-network --enablerepo $harepo -r $mocktestconfig --clean
+		mock --enable-network --enablerepo $harepo -r $mocktestconfig --install $i
 	done
 }
 

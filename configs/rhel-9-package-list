@@ -1,8 +1,8 @@
-anvildeps="htop screen perl-UUID-Tiny perl-Proc-Simple perl-Net-SSH2 perl-Net-OpenSSH perl-Net-Netmask perl-Net-Domain-TLD perl-Mail-RFC822-Address perl-HTML-Strip perl-HTML-FromText perl-Data-Validate-IP perl-Data-Validate-Domain perl-Log-Journald drbd-utils drbd-kmod akmods kmodtool python-websockify"
+anvildeps="htop screen drbd-utils drbd-kmod akmods kmodtool python-websockify mailx bpg-fonts perl-Data-Validate-Domain perl-Data-Validate-IP perl-HTML-FromText perl-HTML-Strip perl-Log-Journald perl-Mail-RFC822-Address perl-Net-Domain-TLD perl-Net-Netmask perl-Net-OpenSSH perl-Net-SSH2 perl-Proc-Simple perl-Sys-Virt perl-UUID-Tiny"
 
-installdeps="perl-Moo perl-Object-Remote perl-Eval-WithLexicals perl-Curses perl-Curses-UI perl-Sys-Virt mailx bpg-fonts python-simplejson python-redis"
+installdeps="python-simplejson python-redis libssh2 perl-Moo perl-Object-Remote perl-Log-Dispatch perl-Log-Log4perl perl-Email-Valid perl-Log-Dispatch-FileRotate perl-MIME-Lite perl-Mail-Sendmail perl-Algorithm-C3 perl-Class-C3 perl-Eval-WithLexicals perl-Exporter-Declare perl-Log-Contextual perl-Future perl-strictures perl-Sub-Quote perl-Email-Date-Format perl-Data-Dumper-Concise perl-Meta-Builder perl-aliased perl-Devel-ArgNames"
 
-builddeps="perl-Font-TTF perl-Test-UseAllModules perl-Module-Install-CheckLib perl-Module-Install-AutoLicense perl-Module-Install-GithubMeta libssh2 perl-Exporter-Lite perl-Email-Find perl-Email-Valid perl-IO-CaptureOutput perl-Role-Tiny perl-Sub-Quote perl-strictures perl-Algorithm-C3 perl-Class-C3 perl-Exporter-Declare perl-Fennec-Lite perl-Meta-Builder perl-aliased perl-Module-Build-Tiny perl-ExtUtils-Config perl-ExtUtils-Helpers perl-ExtUtils-InstallPaths perl-Log-Contextual perl-Log-Log4perl perl-Data-Dumper-Concise perl-Future perl-Devel-ArgNames perl-Test-Identity perl-Test-Refcount perl-Log-Dispatch perl-Log-Dispatch-FileRotate perl-MIME-Lite perl-Mail-Sendmail perl-Test-Needs perl-Email-Date-Format python-mock"
+builddeps="python-mock perl-Email-Find perl-Exporter-Lite"
 
 tools="fpaste"
 
