@@ -1,17 +1,23 @@
 Name:		libssh2
-Version:	1.10.0
-Release:	4.1%{?dist}
+Version:	1.11.0
+Release:	1%{?dist}
 Summary:	A library implementing the SSH2 protocol
-License:	BSD
+License:	BSD-3-Clause
 URL:		https://www.libssh2.org/
 Source0:	https://libssh2.org/download/libssh2-%{version}.tar.gz
-Patch1:		libssh2-1.10.0-ssh-rsa-test.patch
+Source1:	https://libssh2.org/download/libssh2-%{version}.tar.gz.asc
+# Daniel Stenberg's GPG keys; linked from https://daniel.haxx.se/address.html
+Source2:	https://daniel.haxx.se/mykey.asc
+Patch1:		libssh2-1.11.0-strict-modes.patch
+Patch2:		libssh2-1.11.0-ssh-rsa-test.patch
 
 BuildRequires:	coreutils
 BuildRequires:	findutils
 BuildRequires:	gcc
+BuildRequires:	gnupg2
 BuildRequires:	make
-BuildRequires:	openssl-devel > 1:1.0.1
+BuildRequires:	openssl-devel > 1:1.0.2
+BuildRequires:	pkgconfig
 BuildRequires:	sed
 BuildRequires:	zlib-devel
 BuildRequires:	/usr/bin/man
@@ -51,42 +57,58 @@ The libssh2-docs package contains man pages and examples for
 developing applications that use libssh2.
 
 %prep
+%{gpgverify} --keyring='%{SOURCE2}' --signature='%{SOURCE1}' --data='%{SOURCE0}'
 %setup -q
+
+# Group-writeable directories in the hierarchy above where we
+# run the tests from can cause failures due to openssh's strict
+# permissions checks. Adding this option helps the tests to run
+# more reliably on a variety of build systems.
+%patch -P 1
 
 # In 8.8 OpenSSH disabled sha1 rsa-sha keys out of the box,
 # so we need to re-enable them as a workaround for the test
 # suite until upstream updates the tests.
 # See: https://github.com/libssh2/libssh2/issues/630
 %if 0%{?fedora} > 33 || 0%{?rhel} > 8
-%patch1
+%patch -P 2
 %endif
 
 # Replace hard wired port number in the test suite to avoid collisions
 # between 32-bit and 64-bit builds running on a single build-host
-sed -i s/4711/47%{__isa_bits}/ tests/ssh2.{c,sh}
+sed -i s/4711/47%{?__isa_bits}/ tests/{openssh_fixture.c,test_ssh{2.c,d.test}}
 
 %build
-%configure --disable-silent-rules --disable-static --enable-shared
+# Test suite fails to compile if we use --disable-static
+# https://github.com/libssh2/libssh2/issues/1056
+%configure \
+	--disable-silent-rules \
+	--enable-shared \
+	--disable-docker-tests
 %{make_build}
 
 %install
 %{make_install} INSTALL="install -p"
 find %{buildroot} -name '*.la' -delete
 
-# clean things up a bit for packaging
-make -C example clean
-rm -rf example/.deps
-find example/ -type f '(' -name '*.am' -o -name '*.in' ')' -delete
+# Remove static library that we only built for testing
+rm -v %{buildroot}%{_libdir}/libssh2.a
 
-# avoid multilib conflict on libssh2-devel
+# Clean things up a bit for packaging
+make -C example clean
+find example/ -type f \
+	'(' -name '*.am' -o -name '*.in' -o -name CMakeLists.txt ')' \
+	-print -delete
+
+# Remove redundant references to libdir in pkg-config file
+sed -i	-e 's|-L%{_libdir} ||g' \
+	-e 's|-L[$]{libdir} ||g' %{buildroot}%{_libdir}/pkgconfig/libssh2.pc
+
+# Avoid multilib conflict on libssh2-devel
 mv -v example example.%{_arch}
 
 %check
-%if 0%{?rhel} > 8
-LC_ALL=en_US.UTF-8 make -C tests
-%else
 LC_ALL=en_US.UTF-8 make -C tests check
-%endif
 
 %ldconfig_scriptlets
 
@@ -97,7 +119,7 @@ LC_ALL=en_US.UTF-8 make -C tests check
 %{_libdir}/libssh2.so.1.*
 
 %files docs
-%doc docs/BINDINGS docs/HACKING docs/TODO NEWS
+%doc docs/BINDINGS.md docs/HACKING.md docs/TODO NEWS
 %{_mandir}/man3/libssh2_*.3*
 
 %files devel
@@ -109,8 +131,83 @@ LC_ALL=en_US.UTF-8 make -C tests check
 %{_libdir}/pkgconfig/libssh2.pc
 
 %changelog
-* Fri May 20 2022 Fabio M. Di Nitto <fabbione@fabbione.net> - 1.10.0-4.1
-- Disable make check for rhel9/c9s
+* Thu Jun  1 2023 Paul Howarth <paul@city-fan.org> - 1.11.0-1
+- Update to 1.11.0 (rhbz#2211200)
+  - Adds support for encrypt-then-mac (ETM) MACs
+  - Adds support for AES-GCM crypto protocols
+  - Adds support for sk-ecdsa-sha2-nistp256 and sk-ssh-ed25519 keys
+  - Adds support for RSA certificate authentication
+  - Adds FIDO support with *_sk() functions
+  - Adds RSA-SHA2 key upgrading to OpenSSL, WinCNG, mbedTLS, OS400 backends
+  - Adds Agent Forwarding and libssh2_agent_sign()
+  - Adds support for Channel Signal message libssh2_channel_signal_ex()
+  - Adds support to get the user auth banner message libssh2_userauth_banner()
+  - Adds LIBSSH2_NO_{MD5, HMAC_RIPEMD, DSA, RSA, RSA_SHA1, ECDSA, ED25519,
+    AES_CBC, AES_CTR, BLOWFISH, RC4, CAST, 3DES} options
+  - Adds direct stream UNIX sockets with libssh2_channel_direct_streamlocal_ex()
+  - Adds wolfSSL support to CMake file
+  - Adds mbedTLS 3.x support
+  - Adds LibreSSL 3.5 support
+  - Adds support for CMake "unity" builds
+  - Adds CMake support for building shared and static libs in a single pass
+  - Adds symbol hiding support to CMake
+  - Adds support for libssh2.rc for all build tools
+  - Adds .zip, .tar.xz and .tar.bz2 release tarballs
+  - Enables ed25519 key support for LibreSSL 3.7.0 or higher
+  - Improves OpenSSL 1.1 and 3 compatibility
+  - Now requires OpenSSL 1.0.2 or newer
+  - Now requires CMake 3.1 or newer
+  - SFTP: Adds libssh2_sftp_open_ex_r() and libssh2_sftp_open_r() extended APIs
+  - SFTP: No longer has a packet limit when reading a directory
+  - SFTP: Now parses attribute extensions if they exist
+  - SFTP: No longer will busy loop if SFTP fails to initialize
+  - SFTP: Now clear various errors as expected
+  - SFTP: No longer skips files if the line buffer is too small
+  - SCP: Add option to not quote paths
+  - SCP: Enables 64-bit offset support unconditionally
+  - Now skips leading \r and \n characters in banner_receive()
+  - Enables secure memory zeroing with all build tools on all platforms
+  - No longer logs SSH_MSG_REQUEST_FAILURE packets from keepalive
+  - Speed up base64 encoding by 7x
+  - Assert if there is an attempt to write a value that is too large
+  - WinCNG: fix memory leak in _libssh2_dh_secret()
+  - Added protection against possible null pointer dereferences
+  - Agent now handles overly large comment lengths
+  - Now ensure KEX replies don't include extra bytes
+  - Fixed possible buffer overflow when receiving SSH_MSG_USERAUTH_BANNER
+  - Fixed possible buffer overflow in keyboard interactive code path
+  - Fixed overlapping memcpy()
+  - Fixed Windows UWP builds
+  - Fixed DLL import name
+  - Renamed local RANDOM_PADDING macro to avoid unexpected define on Windows
+  - Support for building with gcc versions older than 8
+  - Improvements to CMake, Makefile, NMakefile, GNUmakefile, autoreconf files
+  - Restores ANSI C89 compliance
+  - Enabled new compiler warnings and fixed/silenced them
+  - Improved error messages
+  - Now uses CIFuzz
+  - Numerous minor code improvements
+  - Improvements to CI builds
+  - Improvements to unit tests
+  - Improvements to doc files
+  - Improvements to example files
+  - Removed "old gex" build option
+  - Removed no-encryption/no-mac builds
+  - Removed support for NetWare and Watcom wmake build files
+- Avoid use of deprecated patch syntax
+- Build static library but don't package it since it's required for the
+  test suite (https://github.com/libssh2/libssh2/issues/1056)
+- Remove redundant references to %%{_libdir} from pkgconfig file
+- Add patch to work around strict permissions issues for sshd tests
+
+* Thu Jan 19 2023 Fedora Release Engineering <releng@fedoraproject.org> - 1.10.0-7
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_38_Mass_Rebuild
+
+* Fri Oct 28 2022 Todd Zullinger <tmz@pobox.com> - 1.10.0-6
+- Verify upstream release signatures
+
+* Thu Jul 21 2022 Fedora Release Engineering <releng@fedoraproject.org> - 1.10.0-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_37_Mass_Rebuild
 
 * Sun Jan 23 2022 Paul Howarth <paul@city-fan.org> - 1.10.0-4
 - In 8.8 OpenSSH disabled sha1 rsa-sha keys out of the box,

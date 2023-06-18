@@ -207,11 +207,8 @@ gpgcheck=0
 skip_if_unavailable=False
 EOF
 	case $distro in
-		centos-9-stream)
-			fedrelease=37
-			;;
 		*)
-			fedrelease=36
+			fedrelease=37
 			;;
 	esac
 	dnf download --source \
@@ -242,11 +239,17 @@ function prep_srpms() {
 	rm -rf drbd-kmod-* perl-Log-Journald*
 	for i in $packagelist; do
 		# check if local override exists
-		if [ -d "$anvilsrpms/$i" ]; then
-			echo "Local override for $i detected"
-			cd "$anvilsrpms/$i"
-			./build.sh
-			mv *.src.rpm $localsrpms/
+		if echo $overridesrpms | grep -q $i; then
+			echo "Local override for $i requested"
+			if [ -d "$anvilsrpms/$i" ]; then
+				echo "Local override for $i detected"
+				cd "$anvilsrpms/$i"
+				./build.sh
+				mv *.src.rpm $localsrpms/
+			else
+				echo "Local override for $i not found!"
+				exit 1
+			fi
 		else
 			downloads="$downloads $i"
 		fi

@@ -1,3 +1,5 @@
+overridesrpms="drbd-kmod drbd-utils perl-Log-Journald python-redis"
+
 anvildeps="htop screen drbd-utils drbd-kmod akmods kmodtool python-websockify perl-Data-Validate-Domain perl-Data-Validate-IP perl-HTML-FromText perl-HTML-Strip perl-Log-Journald perl-Mail-RFC822-Address perl-Net-Domain-TLD perl-Net-Netmask perl-Net-OpenSSH perl-Net-SSH2 perl-Proc-Simple perl-UUID-Tiny"
 
 installdeps="python-simplejson python-redis libssh2 perl-Moo perl-Object-Remote perl-Log-Dispatch perl-Log-Log4perl perl-Email-Valid perl-Log-Dispatch-FileRotate perl-MIME-Lite perl-Mail-Sendmail perl-Future perl-Log-Contextual perl-strictures perl-Algorithm-C3 perl-Class-C3 perl-Eval-WithLexicals perl-Exporter-Declare perl-Email-Date-Format perl-Data-Dumper-Concise perl-Meta-Builder perl-aliased perl-Devel-ArgNames"
