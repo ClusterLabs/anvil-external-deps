@@ -111,6 +111,7 @@ mocktestconfig=$(pwd)/build/${distro}/mock-test.cfg
 localmockrepo=$(pwd)/build/${distro}/mockrepo
 localsrpms=$(pwd)/build/${distro}/srpms
 localmirror=$(pwd)/build/${distro}/mirror
+tmpsrpms=$(pwd)/build/${distro}/tmpsrpms
 anvilsrpms=$(pwd)/srpms
 finalrepo=$(pwd)/build/${distro}/finalrepo
 
@@ -237,6 +238,8 @@ function prep_srpms() {
 		return
 	fi
 	cd $localsrpms
+	# force rebuild of drbd-kmod for test update repo
+	rm -rf drbd-kmod-*
 	for i in $packagelist; do
 		# check if local override exists
 		if [ -d "$anvilsrpms/$i" ]; then
@@ -261,6 +264,9 @@ function build_rpms() {
 	if [ "$skipbuild" = "1" ]; then
 		return
 	fi
+
+	# force rebuild of drbd-kmod for test update repo
+	rm -rf $localmockrepo/results/mock-build/drbd-kmod-*
 
 	# add extra attempts in case we have network issues
 	count=5
@@ -405,6 +411,22 @@ EOF
 	fi
 }
 
+# for now, only simulate drbd-kmod update
+function prep_test_update() {
+	rm -rf $tmpsrpms/*
+	mkdir -p $tmpsrpms
+	cp -rp $anvilsrpms/drbd-kmod $tmpsrpms/
+	sed -i \
+	    -e 's#^Release:.*#Release: 99%{?dist}#g' \
+	    -e 's#-1.el#-99.el#g' \
+	    $tmpsrpms/drbd-kmod/drbd-kmod.spec
+	cd $tmpsrpms/drbd-kmod/
+	./build.sh
+	rm -rf $localsrpms/drbd-kmod*
+	mv *.src.rpm $localsrpms/
+	cd $toplevel
+}
+
 # main starts here
 
 # install traps to clean up in case of errors
@@ -438,6 +460,16 @@ build_final_repo
 init_mock $mocktestconfig
 validate_final_repo
 
+publish_repo
+
+# generate test update repo
+cd $toplevel
+finalrepo=$(pwd)/build/${distro}/finalrepo-test-update
+create_dirs
+prep_test_update
+build_rpms
+build_final_repo
+distro=${distro}-test-update
 publish_repo
 
 cleanup 0
