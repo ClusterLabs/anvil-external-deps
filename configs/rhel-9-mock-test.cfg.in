@@ -21,7 +21,7 @@ module_hotfixes=1
 
 [anvil-main-anvil-ci-rhel-9]
 name=anvil-main-anvil-ci-rhel-9
-baseurl=https://kronosnet.org/builds/anvil/anvil-ci-rhel-9/main/latest/
+baseurl=https://ci.kronosnet.org/builds/anvil/anvil-ci-rhel-9/main/latest/
 repo_gpgcheck=0
 enabled=1
 gpgcheck=0
