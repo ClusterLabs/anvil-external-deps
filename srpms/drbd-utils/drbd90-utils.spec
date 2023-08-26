@@ -1,7 +1,7 @@
 %define real_name drbd-utils
 
 Name:    drbd90-utils
-Version: 9.24.0
+Version: 9.25.0
 Release: 1%{?dist}
 License: GPLv2+
 Summary: Management utilities for DRBD
@@ -30,7 +30,7 @@ Conflicts: drbd91-kmod
 Provides: drbd = %{version}-%{release}
 Provides: drbd90 = %{version}-%{release}
 Provides: drbd-utils = %{version}-%{release}
-Provides: drbd-kmod-common = 9.2.4
+Provides: drbd-kmod-common = 9.2.5
 
 ### Conflict with older Linbit packages
 Conflicts: drbd < 9.0
@@ -148,6 +148,10 @@ fi
 %{_prefix}/lib/ocf/resource.d/linbit/drbd.shellfuncs.sh
 
 %changelog
+* Sat Aug 26 2023 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.25.0-1
+- Updated to 9.25.0.
+- Update for new drbd-kmod
+
 * Fri Jun 16 2023 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.24.0-1
 - Updated to 9.24.0.
 - Update for new drbd-kmod
