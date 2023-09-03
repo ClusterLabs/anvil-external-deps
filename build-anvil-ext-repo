@@ -478,4 +478,7 @@ build_final_repo
 distro=${distro}-test-update
 publish_repo
 
+sleep 10
+for i in $(mount | grep workspace | awk '{print $3}'); do umount $i || true; done
+
 cleanup 0
