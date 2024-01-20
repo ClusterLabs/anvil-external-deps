@@ -1,0 +1,35 @@
+include('templates/almalinux-9.tpl')
+
+config_opts['dnf.conf'] += """
+[highavailability]
+name=AlmaLinux $releasever - HighAvailability
+mirrorlist=https://mirrors.almalinux.org/mirrorlist/$releasever/highavailability
+enabled=1
+gpgcheck=1
+countme=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux-9
+metadata_expire=86400
+enabled_metadata=0
+
+[anvil-local]
+name=anvil-local
+baseurl=file://@FINALREPO@
+gpgcheck=0
+enabled=1
+skip_if_unavailable=True
+module_hotfixes=1
+
+[anvil-main-anvil-ci-almalinux-9]
+name=anvil-main-anvil-ci-almalinux-9
+baseurl=https://ci.kronosnet.org/builds/anvil/anvil-ci-almalinux-9/main/latest/
+repo_gpgcheck=0
+enabled=1
+gpgcheck=0
+metadata_expire=1d
+skip_if_unavailable=True
+module_hotfixes=1
+"""
+
+config_opts['root'] = 'anvil-almalinux-9-test'
+config_opts['target_arch'] = 'x86_64'
+config_opts['legal_host_arches'] = ('x86_64',)

@@ -11,7 +11,7 @@ function print_usage() {
 	echo ""
 	echo "Options:"
 	echo " -h help"
-	echo " -d distribution          centos-8-stream|rhel-8|rhel-9 (default: centos-8-stream)"
+	echo " -d distribution          centos-8-stream|rhel-8|almalinux-9|rhel-9 (default: centos-8-stream)"
 	echo " -l                       list currently supported distro"
 	echo " -w                       wipe all mock local caches"
 	echo " -r                       wipe srpms and temporary repositories before and after build"
@@ -27,7 +27,9 @@ function list_distros() {
 	distros=$(ls -1 | sed -e 's#-mock.*##' -e 's#-package.*##g' | sort -u)
 	for i in $distros; do
 		# print distros that have all required config files
-		if [ -f ${i}-mock.cfg.in ] && [ -f ${i}-package-list ]; then
+		if [ -f ${i}-mock-build.cfg.in ] && \
+		   [ -f ${i}-mock-test.cfg.in ] && \
+		   [ -f ${i}-package-list ]; then
 			echo $i
 		fi
 	done
@@ -323,7 +325,7 @@ function build_final_repo() {
 
 function validate_final_repo() {
 	case $distro in
-		rhel-9)
+		almalinux-9|rhel-9)
 			harepo="highavailability"
 		;;
 		centos-8-stream|rhel-8)
