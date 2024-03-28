@@ -1,5 +1,8 @@
 %define real_name drbd-utils
 
+%global selinuxtype             targeted
+%global selinuxmodulename       drbd
+
 Name:    drbd90-utils
 Version: 9.27.0
 Release: 2%{?dist}
@@ -19,11 +22,13 @@ BuildRequires: udev
 BuildRequires: systemd
 BuildRequires: gcc gcc-c++
 BuildRequires: keyutils-libs-devel
+BuildRequires: selinux-policy-devel
 
 Requires: udev
 Requires(post):   systemd-units
 Requires(preun):  systemd-units
 Requires(postun): systemd-units
+Requires: selinux-policy >= %{_selinux_policy_version}
 Requires: drbd-kmod >= 9.1.2
 Conflicts: drbd91-kmod
 
@@ -76,15 +81,22 @@ scripts for heartbeat, pacemaker, rgmanager and xen.
     --with-prebuiltman \
     --with-initscripttype=systemd
 %{__make} %{?_smp_mflags}
+%{__make} -C selinux %{?_smp_mflags}
+
+%pre
+%selinux_relabel_pre -s %{selinuxtype}
 
 %install
 %{__rm} -rf %{buildroot}
 %{__make} install DESTDIR="%{buildroot}"
+%{__make} -C selinux install DESTDIR="%{buildroot}"
 
 %clean
 %{__rm} -rf %{buildroot}
 
 %post
+%selinux_modules_install -s %{selinuxtype} -p 200 %{_datadir}/selinux/packages/%{selinuxtype}/%{selinuxmodulename}.pp.bz2
+
 %systemd_post drbd.service
 
 if /usr/bin/getent group | grep -q ^haclient; then
@@ -99,6 +111,13 @@ fi
 
 %postun
 %systemd_postun_with_restart drbd.service
+
+if [ $1 -eq 0 ]; then
+    %selinux_modules_uninstall -s %{selinuxtype} -p 200 %{selinuxmodulename}
+fi
+
+%posttrans
+%selinux_relabel_post -s %{selinuxtype}
 
 %files
 %doc ChangeLog COPYING README.md scripts/drbd.conf.example
@@ -147,6 +166,10 @@ fi
 %{_prefix}/lib/drbd/crm-fence-peer.9.sh
 %{_prefix}/lib/drbd/crm-unfence-peer.9.sh
 %{_prefix}/lib/ocf/resource.d/linbit/drbd.shellfuncs.sh
+
+### selinux
+%attr(0644, root, root) %{_datadir}/selinux/packages/%{selinuxtype}/%{selinuxmodulename}.pp.bz2
+%ghost %{_sharedstatedir}/selinux/%{selinuxtype}/active/modules/200/%{selinuxmodulename}
 
 %changelog
 * Wed Mar 06 2024 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.27.0-2
