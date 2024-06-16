@@ -1,0 +1,4 @@
+summary: Upstream tests
+component: perl-Test2-Suite
+require: perl-Test2-Suite-tests
+test: /usr/libexec/perl-Test2-Suite/test

@@ -197,7 +197,7 @@ enabled=1
 repo_gpgcheck=0
 type=rpm
 gpgcheck=0
-skip_if_unavailable=False
+skip_if_unavailable=True
 
 [anvil-updates-modular-source]
 name=Fedora Modular \$releasever - Updates Source
@@ -206,11 +206,14 @@ enabled=1
 repo_gpgcheck=0
 type=rpm
 gpgcheck=0
-skip_if_unavailable=False
+skip_if_unavailable=True
 EOF
 	case $distro in
-		*)
+		centos-8*|rhel-8*)
 			fedrelease=37
+			;;
+		*)
+			fedrelease=39
 			;;
 	esac
 	dnf download --source \
@@ -243,11 +246,21 @@ function prep_srpms() {
 		# check if local override exists
 		if echo $overridesrpms | grep -q $i; then
 			echo "Local override for $i requested"
-			if [ -d "$anvilsrpms/$i" ]; then
-				echo "Local override for $i detected"
-				cd "$anvilsrpms/$i"
+			overridedir=""
+			if [ -d "$anvilsrpms/${distro}/$i" ]; then
+				overridedir="$anvilsrpms/${distro}/$i"
+			elif [ -d "$anvilsrpms/$i" ]; then
+				overridedir="$anvilsrpms/$i"
+			fi
+			if [ -n "$overridedir" ]; then
+				echo "Local override for $i detected ($overridedir)"
+				cd "$overridedir"
 				./build.sh
-				mv *.src.rpm $localsrpms/
+				for x in *.src.rpm; do
+					if [ ! -f $localsrpms/$x ]; then
+						mv $x $localsrpms/
+					fi
+				done
 			else
 				echo "Local override for $i not found!"
 				exit 1
