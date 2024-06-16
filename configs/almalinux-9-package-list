@@ -1,4 +1,4 @@
-overridesrpms="drbd-kmod drbd-utils perl-Log-Journald python-redis perl-Test2-Suite mailx"
+overridesrpms="drbd-kmod drbd-utils perl-Log-Journald python-redis perl-Test2-Suite mailx screen perl-Sys-Virt"
 
 anvildeps="htop screen drbd-utils drbd-kmod akmods kmodtool python-websockify s-nail bpg-fonts perl-Data-Validate-Domain perl-Data-Validate-IP perl-HTML-FromText perl-HTML-Strip perl-Log-Journald perl-Mail-RFC822-Address perl-Net-Domain-TLD perl-Net-Netmask perl-Net-OpenSSH perl-Net-SSH2 perl-Proc-Simple perl-Sys-Virt perl-UUID-Tiny"
 

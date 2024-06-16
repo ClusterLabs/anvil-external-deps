@@ -1,0 +1,357 @@
+Avoid several implicit function declarations and implicit int return
+types in the configure script.  This ensures that the package continues
+to build with future compilers which do not support these by default.
+
+Posted upstream:
+https://lists.gnu.org/archive/html/screen-devel/2023-03/msg00001.html
+
+diff --git a/configure.ac b/configure.ac
+index b76c8f5dc8f03560..40ce852854046fcd 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -159,7 +159,7 @@ AC_CHECKING(for POSIX.1)
+ AC_EGREP_CPP(YES_IS_DEFINED,
+ [#include <sys/types.h>
+ #include <unistd.h>
+-main () {
++int main () {
+ #ifdef _POSIX_VERSION
+   YES_IS_DEFINED;
+ #endif
+@@ -181,7 +181,7 @@ AC_EGREP_CPP(YES_IS_DEFINED,
+ 
+ AC_CHECKING(SVR4)
+ AC_EGREP_CPP(yes,
+-[main () {
++[int main () {
+ #if defined(SVR4) || defined(__SVR4)
+   yes;
+ #endif
+@@ -234,6 +234,7 @@ AC_CHECKING(BSD job jontrol)
+ AC_TRY_LINK(
+ [#include <sys/types.h>
+ #include <sys/ioctl.h>
++#include <unistd.h>
+ ], [
+ #ifdef POSIX
+ tcsetpgrp(0, 0);
+@@ -251,11 +252,12 @@ dnl
+ dnl    ****  setresuid(), setreuid(), seteuid()  ****
+ dnl
+ AC_CHECKING(setresuid)
+-AC_TRY_LINK(,[
++AC_TRY_LINK([#define _GNU_SOURCE
++#include <unistd.h>],[
+ setresuid(0, 0, 0);
+ ], AC_DEFINE(HAVE_SETRESUID))
+ AC_CHECKING(setreuid)
+-AC_TRY_LINK(,[
++AC_TRY_LINK([#include <unistd.h>],[
+ setreuid(0, 0);
+ ], AC_DEFINE(HAVE_SETREUID))
+ dnl
+@@ -275,7 +277,7 @@ seteuid(0);
+ 
+ dnl execvpe
+ AC_CHECKING(execvpe)
+-AC_TRY_LINK(,[
++AC_TRY_LINK([#include <unistd.h>],[
+     execvpe(0, 0, 0);
+ ], AC_DEFINE(HAVE_EXECVPE)
+ CFLAGS="$CFLAGS -D_GNU_SOURCE")
+@@ -285,10 +287,10 @@ dnl    ****  select()  ****
+ dnl
+ 
+ AC_CHECKING(select)
+-AC_TRY_LINK(,[select(0, 0, 0, 0, 0);],, 
++AC_TRY_LINK([#include <sys/select.h>],[select(0, 0, 0, 0, 0);],, 
+ LIBS="$LIBS -lnet -lnsl"
+ AC_CHECKING(select with $LIBS)
+-AC_TRY_LINK(,[select(0, 0, 0, 0, 0);],, 
++AC_TRY_LINK([#include <sys/select.h>],[select(0, 0, 0, 0, 0);],, 
+ AC_MSG_ERROR(!!! no select - no screen))
+ )
+ dnl
+@@ -307,6 +309,7 @@ AC_TRY_RUN([
+ 
+ #include <sys/stat.h>
+ #include <fcntl.h>
++#include <stdlib.h>
+ 
+ #ifndef O_NONBLOCK
+ #define O_NONBLOCK O_NDELAY
+@@ -317,7 +320,7 @@ AC_TRY_RUN([
+ 
+ char *fin = "/tmp/conftest$$";
+ 
+-main()
++int main()
+ {
+   struct stat stb;
+   fd_set f;
+@@ -378,6 +381,7 @@ AC_TRY_RUN([
+ 
+ #include <sys/stat.h>
+ #include <fcntl.h>
++#include <stdlib.h>
+ 
+ #ifndef O_NONBLOCK
+ #define O_NONBLOCK O_NDELAY
+@@ -388,7 +392,7 @@ AC_TRY_RUN([
+ 
+ char *fin = "/tmp/conftest$$";
+ 
+-main()
++int main()
+ {
+   struct timeval tv;
+   fd_set f;
+@@ -435,10 +439,13 @@ AC_TRY_RUN([
+ #include <fcntl.h>
+ #include <sys/socket.h>
+ #include <sys/un.h>
++#include <stdlib.h>
++#include <signal.h>
++#include <string.h>
+ 
+ char *son = "/tmp/conftest$$";
+ 
+-main()
++int main()
+ {
+   int s1, s2, l;
+   struct sockaddr_un a;
+@@ -491,10 +498,12 @@ AC_TRY_RUN([
+ #include <sys/stat.h>
+ #include <sys/socket.h>
+ #include <sys/un.h>
++#include <stdlib.h>
++#include <string.h>
+ 
+ char *son = "/tmp/conftest$$";
+ 
+-main()
++int main()
+ {
+   int s;
+   struct stat stb;
+@@ -536,6 +545,7 @@ AC_TRY_RUN([
+ 
+ #include <sys/stat.h>
+ #include <fcntl.h>
++#include <stdlib.h>
+ 
+ char *nam = "/tmp/conftest$$";
+ 
+@@ -548,7 +558,7 @@ char *nam = "/tmp/conftest$$";
+ #define S_IFIFO 0010000
+ #endif
+ 
+-main()
++int main()
+ {
+   fd_set f;
+ 
+@@ -577,8 +587,11 @@ main()
+ #include <sys/types.h>
+ #include <sys/socket.h>
+ #include <sys/un.h>
++#include <stdlib.h>
++#include <signal.h>
++#include <string.h>
+ 
+-main()
++int main()
+ {
+   int s1, s2, l;
+   struct sockaddr_un a;
+@@ -625,35 +638,44 @@ dnl
+ dnl    ****  termcap or terminfo  ****
+ dnl
+ AC_CHECKING(for tgetent)
+-AC_TRY_LINK(,tgetent((char *)0, (char *)0);,,
++AC_TRY_LINK([#include <curses.h>
++#include <term.h>],
++tgetent((char *)0, (char *)0);,,
+ olibs="$LIBS"
+ LIBS="-ltinfo $olibs"
+ AC_CHECKING(libtinfo)
+-AC_TRY_LINK(,[
++AC_TRY_LINK([#include <curses.h>
++#include <term.h>],[
+ tgetent((char *)0, (char *)0);
+ ],,
+ LIBS="-ltermcap $olibs"
+ AC_CHECKING(libtermcap)
+-AC_TRY_LINK(,tgetent((char *)0, (char *)0);,,
++AC_TRY_LINK([#include <curses.h>
++#include <term.h>],tgetent((char *)0, (char *)0);,,
+ LIBS="-ltermlib $olibs"
+ AC_CHECKING(libtermlib)
+-AC_TRY_LINK(,tgetent((char *)0, (char *)0);,,
++AC_TRY_LINK([#include <curses.h>
++#include <term.h>],tgetent((char *)0, (char *)0);,,
+ LIBS="-lncursesw $olibs"
+ AC_CHECKING(libncursesw)
+-AC_TRY_LINK(,tgetent((char *)0, (char *)0);,,
++AC_TRY_LINK([#include <curses.h>
++#include <term.h>],tgetent((char *)0, (char *)0);,,
+ LIBS="-ltinfow $olibs"
+ AC_CHECKING(libtinfow)
+-AC_TRY_LINK(,tgetent((char *)0, (char *)0);,,
++AC_TRY_LINK([#include <curses.h>
++#include <term.h>],tgetent((char *)0, (char *)0);,,
+ LIBS="-lncurses $olibs"
+ AC_CHECKING(libncurses)
+-AC_TRY_LINK(,tgetent((char *)0, (char *)0);,,
++AC_TRY_LINK([#include <curses.h>
++#include <term.h>],tgetent((char *)0, (char *)0);,,
+ LIBS="-ltinfo $olibs"
+ AC_CHECKING(libtinfo)
+-AC_TRY_LINK(,tgetent((char *)0, (char *)0);,,
++AC_TRY_LINK([#include <curses.h>
++#include <term.h>],tgetent((char *)0, (char *)0);,,
+ AC_MSG_ERROR(!!! no tgetent - no screen)))))))))
+ 
+ AC_TRY_RUN([
+-main()
++int main()
+ {
+     return 1;
+ }], AC_NOTE(- you use the termcap database),
+@@ -676,7 +698,7 @@ if test "$cross_compiling" = no ; then
+ AC_CHECKING(for SVR4 ptys)
+ sysvr4ptys=
+ if test -c /dev/ptmx ; then
+-AC_TRY_LINK([],[ptsname(0);grantpt(0);unlockpt(0);],[AC_DEFINE(HAVE_SVR4_PTYS)
++AC_TRY_LINK([#include <stdlib.h>],[ptsname(0);grantpt(0);unlockpt(0);],[AC_DEFINE(HAVE_SVR4_PTYS)
+ sysvr4ptys=1])
+ fi
+ fi
+@@ -732,7 +754,8 @@ AC_TRY_RUN([
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <stdio.h>
+-main()
++#include <stdlib.h>
++int main()
+ {
+   struct stat sb;
+   char *x,*ttyname();
+@@ -863,13 +886,13 @@ dnl    ****  loadav  ****
+ dnl
+ 
+ AC_CHECKING(getloadavg)
+-AC_TRY_LINK(,[getloadavg((double *)0, 0);],
++AC_TRY_LINK([#include <stdlib.h>],[getloadavg((double *)0, 0);],
+ AC_DEFINE(LOADAV_GETLOADAVG) load=1,
+ if test "$cross_compiling" = no && test -f /usr/lib/libkvm.a ; then
+ olibs="$LIBS"
+ LIBS="$LIBS -lkvm"
+ AC_CHECKING(getloadavg with -lkvm)
+-AC_TRY_LINK(,[getloadavg((double *)0, 0);],
++AC_TRY_LINK([#include <stdlib.h>],[getloadavg((double *)0, 0);],
+ AC_DEFINE(LOADAV_GETLOADAVG) load=1, LIBS="$olibs")
+ fi
+ )
+@@ -915,6 +938,7 @@ else
+   for av in avenrun _avenrun _Loadavg avenrun _avenrun _Loadavg; do
+   AC_TRY_RUN([
+ #include <sys/types.h>
++#include <stdlib.h>
+ #ifdef NLIST_STRUCT
+ #include <nlist.h>
+ #else
+@@ -925,7 +949,7 @@ $nlist64
+ 
+ struct nlist nl[2];
+ 
+-main()
++int main()
+ {
+ #if !defined(_AUX_SOURCE) && !defined(AUX)
+ # ifdef NLIST_NAME_UNION
+@@ -1044,6 +1068,8 @@ AC_CHECKING(signal implementation)
+ AC_TRY_RUN([
+ #include <sys/types.h>
+ #include <signal.h>
++#include <stdlib.h>
++#include <signal.h>
+ 
+ #ifndef SIGCLD
+ #define SIGCLD SIGCHLD
+@@ -1062,7 +1088,7 @@ hand()
+   got++;
+ }
+ 
+-main()
++int main()
+ {
+   /* on hpux we use sigvec to get bsd signals */
+ #ifdef __hpux
+@@ -1101,10 +1127,10 @@ AC_CHECKING(IRIX sun library)
+ AC_TRY_LINK(,,,LIBS="$oldlibs")
+ 
+ AC_CHECKING(syslog)
+-AC_TRY_LINK(,[closelog();], , [oldlibs="$LIBS"
++AC_TRY_LINK([#include <syslog.h>],[closelog();], , [oldlibs="$LIBS"
+ LIBS="$LIBS -lbsd"
+ AC_CHECKING(syslog in libbsd.a)
+-AC_TRY_LINK(, [closelog();], AC_NOTE(- found.), [LIBS="$oldlibs"
++AC_TRY_LINK([#include <syslog.h>], [closelog();], AC_NOTE(- found.), [LIBS="$oldlibs"
+ AC_NOTE(- bad news: syslog missing.) AC_DEFINE(NOSYSLOG)])])
+ 
+ AC_EGREP_CPP(YES_IS_DEFINED,
+@@ -1141,14 +1167,17 @@ AC_CHECKING(getspnam)
+ AC_TRY_LINK([#include <shadow.h>], [getspnam("x");],AC_DEFINE(SHADOWPW))
+ 
+ AC_CHECKING(getttyent)
+-AC_TRY_LINK(,[getttyent();], AC_DEFINE(GETTTYENT))
++AC_TRY_LINK([#include <ttyent.h>],[getttyent();], AC_DEFINE(GETTTYENT))
+ 
+ AC_CHECKING(fdwalk)
+ AC_TRY_LINK([#include <stdlib.h>], [fdwalk(NULL, NULL);],AC_DEFINE(HAVE_FDWALK))
+ 
+ AC_CHECKING(whether memcpy/memmove/bcopy handles overlapping arguments)
+ AC_TRY_RUN([
+-main() {
++#include <stdlib.h>
++#include <string.h>
++#include <strings.h>
++int main() {
+   char buf[10];
+   strcpy(buf, "abcdefghi");
+   bcopy(buf, buf + 2, 3);
+@@ -1162,8 +1191,10 @@ main() {
+ }], AC_DEFINE(USEBCOPY),,:)
+ 
+ AC_TRY_RUN([
++#include <stdlib.h>
++#include <string.h>
+ #define bcopy(s,d,l) memmove(d,s,l)
+-main() {
++int main() {
+   char buf[10];
+   strcpy(buf, "abcdefghi");
+   bcopy(buf, buf + 2, 3);
+@@ -1180,7 +1211,9 @@ main() {
+ 
+ AC_TRY_RUN([
+ #define bcopy(s,d,l) memcpy(d,s,l)
+-main() {
++#include <string.h>
++#include <stdlib.h>
++int main() {
+   char buf[10];
+   strcpy(buf, "abcdefghi");
+   bcopy(buf, buf + 2, 3);
+@@ -1196,7 +1229,8 @@ main() {
+ AC_SYS_LONG_FILE_NAMES
+ 
+ AC_MSG_CHECKING(for vsprintf)
+-AC_TRY_LINK([#include <stdarg.h>],[va_list valist; vsprintf(0,0,valist);], AC_MSG_RESULT(yes);AC_DEFINE(USEVARARGS), AC_MSG_RESULT(no))
++AC_TRY_LINK([#include <stdarg.h>
++#include <stdio.h>],[va_list valist; vsprintf(0,0,valist);], AC_MSG_RESULT(yes);AC_DEFINE(USEVARARGS), AC_MSG_RESULT(no))
+ 
+ AC_HEADER_DIRENT
+ 
