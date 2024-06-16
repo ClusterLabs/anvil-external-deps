@@ -1,0 +1,4 @@
+summary: Upstream tests
+component: perl-Sys-Virt
+require: perl-Sys-Virt-tests
+test: /usr/libexec/perl-Sys-Virt/test

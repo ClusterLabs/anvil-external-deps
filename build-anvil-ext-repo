@@ -213,7 +213,7 @@ EOF
 			fedrelease=37
 			;;
 		*)
-			fedrelease=39
+			fedrelease=40
 			;;
 	esac
 	dnf download --source \
