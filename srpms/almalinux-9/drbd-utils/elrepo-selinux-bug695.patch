@@ -1,0 +1,7 @@
+diff -Naurd drbd-utils-9.25.0.orig/scripts/drbd.tmpfiles.conf drbd-utils-9.25.0/scripts/drbd.tmpfiles.conf
+--- drbd-utils-9.25.0.orig/scripts/drbd.tmpfiles.conf	2023-07-07 09:16:28.000000000 +0200
++++ drbd-utils-9.25.0/scripts/drbd.tmpfiles.conf	2023-08-26 07:37:07.900184430 +0200
+@@ -1,2 +1,3 @@
+ d /run/drbd 0700 root root -
+ d /run/drbd/lock 0700 root root -
++Z /run/drbd - - -
