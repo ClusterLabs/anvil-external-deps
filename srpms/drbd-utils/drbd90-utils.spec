@@ -4,8 +4,8 @@
 %global selinuxmodulename       drbd
 
 Name:    drbd90-utils
-Version: 9.27.0
-Release: 3%{?dist}
+Version: 9.28.0
+Release: 1%{?dist}
 License: GPLv2+
 Summary: Management utilities for DRBD
 URL:     http://www.drbd.org/
@@ -36,7 +36,7 @@ Conflicts: drbd91-kmod
 Provides: drbd = %{version}-%{release}
 Provides: drbd90 = %{version}-%{release}
 Provides: drbd-utils = %{version}-%{release}
-Provides: drbd-kmod-common = 9.2.8
+Provides: drbd-kmod-common = 9.2.11
 
 ### Conflict with older Linbit packages
 Conflicts: drbd < 9.0
@@ -172,6 +172,10 @@ fi
 %ghost %{_sharedstatedir}/selinux/%{selinuxtype}/active/modules/200/%{selinuxmodulename}
 
 %changelog
+* Sat Aug 17 2024 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.28.0-1
+- Updated to 9.28.0.
+- Update for new drbd-kmod
+
 * Thu Mar 28 2024 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.27.0-3
 - bump version
 - include selinux rules from Yan
