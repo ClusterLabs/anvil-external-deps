@@ -435,12 +435,18 @@ function prep_test_update() {
 	rm -rf $tmpsrpms/*
 	mkdir -p $tmpsrpms
 	for i in drbd-kmod perl-Log-Journald; do
-		cp -rp $anvilsrpms/$i $tmpsrpms/
+		overridedir=""
+		if [ -d "$anvilsrpms/${distro}/$i" ]; then
+			overridedir="$anvilsrpms/${distro}/$i"
+		elif [ -d "$anvilsrpms/$i" ]; then
+			overridedir="$anvilsrpms/$i"
+		fi
+		cp -rp $overridedir/ $tmpsrpms/
 		sed -i \
 		    -e 's#^Release:.*#Release: 99%{?dist}#g' \
 		    -e 's#-1.el#-99.el#g' \
-		    $tmpsrpms/$i/*.spec
-		cd $tmpsrpms/$i
+		    $tmpsrpms/${i}/*.spec
+		cd $tmpsrpms/${i}/
 		./build.sh
 		rm -rf $localsrpms/${i}*
 		mv *.src.rpm $localsrpms/
