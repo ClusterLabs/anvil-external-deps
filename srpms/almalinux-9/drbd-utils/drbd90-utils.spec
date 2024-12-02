@@ -4,7 +4,7 @@
 %global selinuxmodulename       drbd
 
 Name:    drbd90-utils
-Version: 9.28.0
+Version: 9.29.0
 Release: 1%{?dist}
 License: GPLv2+
 Summary: Management utilities for DRBD
@@ -36,7 +36,7 @@ Conflicts: drbd91-kmod
 Provides: drbd = %{version}-%{release}
 Provides: drbd90 = %{version}-%{release}
 Provides: drbd-utils = %{version}-%{release}
-Provides: drbd-kmod-common = 9.2.11
+Provides: drbd-kmod-common = 9.2.12
 
 ### Conflict with older Linbit packages
 Conflicts: drbd < 9.0
@@ -73,7 +73,6 @@ scripts for heartbeat, pacemaker, rgmanager and xen.
     --without-xen \
     --without-windrbd \
     --without-heartbeat \
-    --without-83support \
     --without-84support \
     --with-udev \
     --with-pacemaker \
@@ -136,8 +135,8 @@ fi
 %config(noreplace) %{_sysconfdir}/drbd.d/global_common.conf
 %config %{_unitdir}/*
 %dir %{_localstatedir}/lib/drbd/
-%dir /lib/drbd/scripts
-/lib/drbd/scripts/*
+%dir %{_prefix}/lib/drbd/scripts
+%attr(755, root, root) %{_prefix}/lib/drbd/scripts/*
 %attr(755, root, root) %{_sbindir}/drbdadm
 %attr(755, root, root) %{_sbindir}/drbdmeta
 %attr(755, root, root) %{_sbindir}/drbdsetup
@@ -172,6 +171,10 @@ fi
 %ghost %{_sharedstatedir}/selinux/%{selinuxtype}/active/modules/200/%{selinuxmodulename}
 
 %changelog
+* Mon Dec 02 2024 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.29.0-1
+- Updated to 9.29.0.
+- Update for new drbd-kmod
+
 * Sat Aug 17 2024 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.28.0-1
 - Updated to 9.28.0.
 - Update for new drbd-kmod
