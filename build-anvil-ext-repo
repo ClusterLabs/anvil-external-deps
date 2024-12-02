@@ -11,7 +11,7 @@ function print_usage() {
 	echo ""
 	echo "Options:"
 	echo " -h help"
-	echo " -d distribution          centos-8-stream|rhel-8|almalinux-9|rhel-9 (default: centos-8-stream)"
+	echo " -d distribution          almalinux-9|rhel-9 (default: almalinux-9)"
 	echo " -l                       list currently supported distro"
 	echo " -w                       wipe all mock local caches"
 	echo " -r                       wipe srpms and temporary repositories before and after build"
@@ -39,7 +39,7 @@ function list_distros() {
 tools="mock wget rpmbuild createrepo"
 
 # set defaults
-distro=centos-8-stream
+distro=almalinux-9
 wipemock=0
 wiperpm=0
 skipsrpms=0
@@ -209,9 +209,6 @@ gpgcheck=0
 skip_if_unavailable=True
 EOF
 	case $distro in
-		centos-8*|rhel-8*)
-			fedrelease=37
-			;;
 		*)
 			fedrelease=40
 			;;
@@ -340,9 +337,6 @@ function validate_final_repo() {
 	case $distro in
 		almalinux-9|rhel-9)
 			harepo="highavailability"
-		;;
-		centos-8-stream|rhel-8)
-			harepo="ha"
 		;;
 	esac
 
