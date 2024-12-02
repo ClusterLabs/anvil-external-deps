@@ -189,24 +189,6 @@ repo_gpgcheck=0
 type=rpm
 gpgcheck=0
 skip_if_unavailable=False
-
-[anvil-fedora-modular-source]
-name=Fedora Modular \$releasever - Source
-metalink=https://mirrors.fedoraproject.org/metalink?repo=fedora-modular-source-\$releasever&arch=\$basearch
-enabled=1
-repo_gpgcheck=0
-type=rpm
-gpgcheck=0
-skip_if_unavailable=True
-
-[anvil-updates-modular-source]
-name=Fedora Modular \$releasever - Updates Source
-metalink=https://mirrors.fedoraproject.org/metalink?repo=updates-released-modular-source-f\$releasever&arch=\$basearch
-enabled=1
-repo_gpgcheck=0
-type=rpm
-gpgcheck=0
-skip_if_unavailable=True
 EOF
 	case $distro in
 		*)
@@ -218,7 +200,6 @@ EOF
 		--releasever $fedrelease \
 		--disablerepo="*" \
 		--enablerepo=anvil-fedora-source --enablerepo=anvil-updates-source \
-		--enablerepo=anvil-fedora-modular-source --enablerepo=anvil-updates-modular-source \
 		--installroot=$localmirror/installroot \
 		$srpms
 	mv $localmirror/*src.rpm $localsrpms/
