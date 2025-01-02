@@ -1,0 +1,19 @@
+--- a/drbd-utils-9.29.0.orig/selinux/drbd.te	2025-01-03 01:18:09.048577713 -0500
++++ b/drbd-utils-9.29.0/selinux/drbd.te	2025-01-03 01:23:07.634290658 -0500
+@@ -44,7 +44,8 @@
+ 	class file { map lock open read getattr setattr write };
+ 	class netlink_generic_socket create_socket_perms;
+ 	class unix_stream_socket all_unix_stream_socket_perms;
+-	class system module_request;
++	# make system class permission "module_load" known
++	class system { module_load module_request };
+ }
+ 
+ #============= drbd_t ==============
+@@ -129,4 +130,5 @@
+ # # printf "%s\n" drbd drbd-transport-tcp > /etc/modules-load.d/drbd.conf
+ allow drbd_t modules_dep_t:file { map open read getattr };
+ allow drbd_t modules_object_t:file map;
+-allow drbd_t kernel_t:system module_request;
++# allow module_load to resolve "unable to load drbd module when upgraded to 9.29.0"
++allow drbd_t kernel_t:system { module_load module_request };

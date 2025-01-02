@@ -12,6 +12,7 @@ URL:     http://www.drbd.org/
 
 Source0: https://pkg.linbit.com//downloads/drbd/utils/drbd-utils-%{version}.tar.gz
 Patch1:  elrepo-selinux-bug695.patch
+Patch2:  selinux-permit-module-load.patch
 
 BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: docbook-style-xsl
@@ -61,6 +62,7 @@ scripts for heartbeat, pacemaker, rgmanager and xen.
 %prep
 %setup -n %{real_name}-%{version}
 %patch1 -p1
+%patch2 -p2
 
 %build
 ### Overriding standard configure call because it breaks C++11
