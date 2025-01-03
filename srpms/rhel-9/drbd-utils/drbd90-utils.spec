@@ -5,13 +5,14 @@
 
 Name:    drbd90-utils
 Version: 9.29.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv2+
 Summary: Management utilities for DRBD
 URL:     http://www.drbd.org/
 
 Source0: https://pkg.linbit.com//downloads/drbd/utils/drbd-utils-%{version}.tar.gz
 Patch1:  elrepo-selinux-bug695.patch
+Patch2:  selinux-permit-module-load.patch
 
 BuildRoot:     %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: docbook-style-xsl
@@ -61,6 +62,7 @@ scripts for heartbeat, pacemaker, rgmanager and xen.
 %prep
 %setup -n %{real_name}-%{version}
 %patch1 -p1
+%patch2 -p2
 
 %build
 ### Overriding standard configure call because it breaks C++11
@@ -171,6 +173,10 @@ fi
 %ghost %{_sharedstatedir}/selinux/%{selinuxtype}/active/modules/200/%{selinuxmodulename}
 
 %changelog
+* Fri Jan 03 2025 Yanhao Lei <yanhao.lei@alteeve.com> - 9.29.0-2
+- Bump version
+- Add selinux rules to allow module_load
+
 * Mon Dec 02 2024 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.29.0-1
 - Updated to 9.29.0.
 - Update for new drbd-kmod
