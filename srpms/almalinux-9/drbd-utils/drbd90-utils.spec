@@ -5,7 +5,7 @@
 
 Name:    drbd90-utils
 Version: 9.29.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPLv2+
 Summary: Management utilities for DRBD
 URL:     http://www.drbd.org/
@@ -173,6 +173,10 @@ fi
 %ghost %{_sharedstatedir}/selinux/%{selinuxtype}/active/modules/200/%{selinuxmodulename}
 
 %changelog
+* Fri Jan 03 2025 Yanhao Lei <yanhao.lei@alteeve.com> - 9.29.0-2
+- Bump version
+- Add selinux rules to allow module_load
+
 * Mon Dec 02 2024 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.29.0-1
 - Updated to 9.29.0.
 - Update for new drbd-kmod
