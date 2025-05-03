@@ -4,8 +4,8 @@
 %global selinuxmodulename       drbd
 
 Name:    drbd90-utils
-Version: 9.29.0
-Release: 2%{?dist}
+Version: 9.31.0
+Release: 1%{?dist}
 License: GPLv2+
 Summary: Management utilities for DRBD
 URL:     http://www.drbd.org/
@@ -37,7 +37,7 @@ Conflicts: drbd91-kmod
 Provides: drbd = %{version}-%{release}
 Provides: drbd90 = %{version}-%{release}
 Provides: drbd-utils = %{version}-%{release}
-Provides: drbd-kmod-common = 9.2.12
+Provides: drbd-kmod-common = 9.2.13
 
 ### Conflict with older Linbit packages
 Conflicts: drbd < 9.0
@@ -123,10 +123,8 @@ fi
 %files
 %doc ChangeLog COPYING README.md scripts/drbd.conf.example
 %doc %{_mandir}/man7/*.7*
-%doc %{_mandir}/man5/drbd.conf.5*
 %doc %{_mandir}/man5/drbd.conf-*
 %doc %{_mandir}/man8/drbd*
-%doc %{_mandir}/ja/man5/drbd.conf.5*
 %doc %{_mandir}/ja/man5/drbd.conf-*
 %doc %{_mandir}/ja/man8/drbd*
 %config %{_sysconfdir}/bash_completion.d/drbdadm
@@ -143,6 +141,7 @@ fi
 %attr(755, root, root) %{_sbindir}/drbdmeta
 %attr(755, root, root) %{_sbindir}/drbdsetup
 %attr(755, root, root) %{_sbindir}/drbdmon
+%attr(755, root, root) %{_sbindir}/drbd-events-log-supplier
 %dir %{_prefix}/lib/drbd/
 %{_prefix}/lib/drbd/notify-out-of-sync.sh
 %{_prefix}/lib/drbd/notify-split-brain.sh
@@ -158,6 +157,7 @@ fi
 %{_prefix}/lib/drbd/stonith_admin-fence-peer.sh
 %{_prefix}/lib/drbd/unsnapshot-resync-target-lvm.sh
 %{_prefix}/lib/tmpfiles.d/drbd.conf
+%{_prefix}/lib/systemd/system-preset/50-drbd.preset
 
 ### pacemaker
 %{_prefix}/lib/drbd/crm-fence-peer.sh
@@ -173,6 +173,10 @@ fi
 %ghost %{_sharedstatedir}/selinux/%{selinuxtype}/active/modules/200/%{selinuxmodulename}
 
 %changelog
+* Tue Apr 29 2025 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.31.0-1
+- Updated to 9.31.0.
+- Update for new drbd-kmod
+
 * Fri Jan 03 2025 Yanhao Lei <yanhao.lei@alteeve.com> - 9.29.0-2
 - Bump version
 - Add selinux rules to allow module_load
