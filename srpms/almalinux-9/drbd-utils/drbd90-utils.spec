@@ -4,7 +4,7 @@
 %global selinuxmodulename       drbd
 
 Name:    drbd90-utils
-Version: 9.31.0
+Version: 9.33.0
 Release: 1%{?dist}
 License: GPLv2+
 Summary: Management utilities for DRBD
@@ -37,7 +37,7 @@ Conflicts: drbd91-kmod
 Provides: drbd = %{version}-%{release}
 Provides: drbd90 = %{version}-%{release}
 Provides: drbd-utils = %{version}-%{release}
-Provides: drbd-kmod-common = 9.2.13
+Provides: drbd-kmod-common = 9.2.16
 
 ### Conflict with older Linbit packages
 Conflicts: drbd < 9.0
@@ -61,8 +61,8 @@ scripts for heartbeat, pacemaker, rgmanager and xen.
 
 %prep
 %setup -n %{real_name}-%{version}
-%patch1 -p1
-%patch2 -p2
+%patch -P1 -p1
+%patch -P2 -p2
 
 %build
 ### Overriding standard configure call because it breaks C++11
@@ -72,7 +72,6 @@ scripts for heartbeat, pacemaker, rgmanager and xen.
     --localstatedir=/var \
     --sysconfdir=/etc \
     --without-rgmanager \
-    --without-xen \
     --without-windrbd \
     --without-heartbeat \
     --without-84support \
@@ -80,7 +79,8 @@ scripts for heartbeat, pacemaker, rgmanager and xen.
     --with-pacemaker \
     --with-drbdmon \
     --with-prebuiltman \
-    --with-initscripttype=systemd
+    --with-initscripttype=systemd \
+    --with-bashcompletion
 %{__make} %{?_smp_mflags}
 %{__make} -C selinux %{?_smp_mflags}
 
@@ -127,7 +127,8 @@ fi
 %doc %{_mandir}/man8/drbd*
 %doc %{_mandir}/ja/man5/drbd.conf-*
 %doc %{_mandir}/ja/man8/drbd*
-%config %{_sysconfdir}/bash_completion.d/drbdadm
+%dir %{_datadir}/bash-completion/completions/
+%{_datadir}/bash-completion/completions/drbdadm
 %config %{_prefix}/lib/udev/rules.d/65-drbd.rules
 %config(noreplace) %{_sysconfdir}/drbd.conf
 %config(noreplace) %{_sysconfdir}/multipath/conf.d/drbd.conf
@@ -155,6 +156,7 @@ fi
 %{_prefix}/lib/drbd/outdate-peer.sh
 %{_prefix}/lib/drbd/snapshot-resync-target-lvm.sh
 %{_prefix}/lib/drbd/stonith_admin-fence-peer.sh
+%{_prefix}/lib/drbd/tnf-drbd-fence.py
 %{_prefix}/lib/drbd/unsnapshot-resync-target-lvm.sh
 %{_prefix}/lib/tmpfiles.d/drbd.conf
 %{_prefix}/lib/systemd/system-preset/50-drbd.preset
@@ -173,6 +175,10 @@ fi
 %ghost %{_sharedstatedir}/selinux/%{selinuxtype}/active/modules/200/%{selinuxmodulename}
 
 %changelog
+* Tue Dec 02 2025 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.33.0-1
+- Updated to 9.33.0.
+- Update for new drbd-kmod
+
 * Tue Apr 29 2025 Fabio M. Di Nitto <fabbione@fabbione.net> - 9.31.0-1
 - Updated to 9.31.0.
 - Update for new drbd-kmod

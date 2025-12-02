@@ -10,7 +10,7 @@
 
 Name:           perl-Test2-Suite
 Version:        0.000155
-Release:        3%{?dist}
+Release:        3%{?dist}.1
 Summary:        Set of tools built upon the Test2 framework
 License:        GPL-1.0-or-later OR Artistic-1.0-Perl
 URL:            https://metacpan.org/release/Test2-Suite
@@ -130,7 +130,7 @@ with "%{_libexecdir}/%{name}/test".
 
 %prep
 %setup -q -n Test2-Suite-%{version}
-%patch0 -p1
+%patch -P0 -p1
 # Help generators to recognize Perl scripts
 for F in `find . -type f -name '*.t'`; do
     perl -i -MConfig -ple 'print $Config{startperl} if $. == 1 && !s{\A#!\s*perl}{$Config{startperl}}' "$F"
@@ -167,6 +167,9 @@ make test
 %{_libexecdir}/%{name}
 
 %changelog
+* Tue Dec 02 2025 Fabio M. Di Nitto <fabbione@fabbione.net> - 0.000155-3.1
+- Fix patch
+
 * Fri Jul 21 2023 Fedora Release Engineering <releng@fedoraproject.org> - 0.000155-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_39_Mass_Rebuild
 
